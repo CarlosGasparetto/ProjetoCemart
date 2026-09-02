@@ -20,13 +20,12 @@
       <h1 class="text-sm font-bold">Gestão da Fila de Espera • Secretaria</h1>
     </div>
     
-    <!-- Ações agrupadas à direita -->
     <div class="flex items-center gap-2">
       <button onclick="renderizarTabela()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition" title="Atualizar Dados">
         <i class="fa-solid fa-arrows-rotate"></i> Atualizar
       </button>
       <button onclick="abrirModalCursos()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
-        <i class="fa-solid fa-list-check"></i> Gerenciar Cursos
+        <i class="fa-solid fa-table-cells"></i> Grade de Cursos
       </button>
       <a href="inscricao.html" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
         <i class="fa-solid fa-plus"></i> Digitar Nova Ficha
@@ -95,32 +94,38 @@
 
   </main>
 
-  <!-- Modal de Gestão de Cursos -->
+  <!-- Modal com Grade de Cursos (Layout em Grid) -->
   <div id="modalCursos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
       
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="text-sm font-bold text-slate-800">Grade de Oficinas e Cursos</h3>
+        <div>
+          <h3 class="text-sm font-bold text-slate-800">Grade de Oficinas e Cursos</h3>
+          <p class="text-[11px] text-slate-400">Clique em um curso para ativar ou suspender as inscrições</p>
+        </div>
         <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-base">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <!-- Cadastro de Novo Curso -->
+      <!-- Cadastro Rápido de Novo Curso -->
       <div class="flex gap-2">
-        <input type="text" id="novoNomeCurso" placeholder="Nome da nova oficina..." class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-        <button onclick="adicionarCurso()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1">
+        <input type="text" id="novoNomeCurso" placeholder="Nome da nova oficina (ex: Flauta Transversal)..." class="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none uppercase">
+        <button onclick="adicionarCurso()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs">
           <i class="fa-solid fa-plus"></i> Adicionar
         </button>
       </div>
 
-      <!-- Lista com Botões de Ativar/Desativar -->
-      <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-100" id="listaCursosModal">
-        <!-- Preenchido via JavaScript -->
+      <!-- Grade de Cursos (Grid) -->
+      <div class="flex-1 overflow-y-auto pr-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="gridCursosModal">
+          <!-- Cards preenchidos via JavaScript -->
+        </div>
       </div>
 
-      <div class="text-right pt-2">
-        <button onclick="fecharModalCursos()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">
+      <div class="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+        <span class="text-slate-400 text-[11px]">Verde: Inscrições Abertas • Cinza: Suspenso</span>
+        <button onclick="fecharModalCursos()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition">
           Fechar
         </button>
       </div>
@@ -129,12 +134,12 @@
   </div>
 
   <script>
-    // --- Funções do Modal de Gestão de Cursos ---
+    // --- Funções do Modal de Grade de Cursos ---
     function abrirModalCursos() {
       const modal = document.getElementById('modalCursos');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
-      renderizarListaCursosModal();
+      renderizarGradeCursosModal();
     }
 
     function fecharModalCursos() {
@@ -143,9 +148,9 @@
       modal.classList.remove('flex');
     }
 
-    async function renderizarListaCursosModal() {
-      const container = document.getElementById('listaCursosModal');
-      container.innerHTML = '<p class="p-3 text-center text-xs text-slate-400">Carregando oficinas...</p>';
+    async function renderizarGradeCursosModal() {
+      const grid = document.getElementById('gridCursosModal');
+      grid.innerHTML = '<div class="col-span-2 py-8 text-center text-xs text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Carregando grade...</div>';
 
       const { data: lista, error } = await db
         .from('cursos')
@@ -153,22 +158,35 @@
         .order('nome_curso', { ascending: true });
 
       if (error) {
-        container.innerHTML = '<p class="p-3 text-center text-xs text-red-500">Erro ao carregar cursos.</p>';
+        grid.innerHTML = '<div class="col-span-2 py-4 text-center text-xs text-rose-500">Erro de conexão ao carregar cursos.</div>';
         return;
       }
 
-      container.innerHTML = '';
+      grid.innerHTML = '';
       lista.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'p-2.5 flex items-center justify-between text-xs hover:bg-slate-50';
-        
-        item.innerHTML = `
-          <span class="font-medium ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${c.nome_curso}</span>
-          <button onclick="alternarStatusCurso(${c.id_curso}, ${!c.ativo})" class="px-2.5 py-1 rounded-md text-[10px] font-bold transition ${c.ativo ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}">
-            ${c.ativo ? '<i class="fa-solid fa-check mr-1"></i> Ativo' : '<i class="fa-solid fa-ban mr-1"></i> Inativo'}
-          </button>
+        const card = document.createElement('div');
+        const ativo = c.ativo;
+
+        card.className = `p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between select-none ${
+          ativo 
+            ? 'bg-emerald-50/60 border-emerald-300 hover:border-emerald-400 shadow-xs' 
+            : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-80'
+        }`;
+
+        card.onclick = () => alternarStatusCurso(c.id_curso, !ativo);
+
+        card.innerHTML = `
+          <div class="pr-2">
+            <h4 class="font-bold text-xs ${ativo ? 'text-emerald-950' : 'text-slate-600 line-through'}">${c.nome_curso}</h4>
+            <span class="text-[10px] font-semibold uppercase tracking-wider ${ativo ? 'text-emerald-700' : 'text-slate-400'}">
+              ${ativo ? '● Ativo na Inscrição' : '○ Suspenso'}
+            </span>
+          </div>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm ${ativo ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'}">
+            <i class="fa-solid ${ativo ? 'fa-check' : 'fa-ban'}"></i>
+          </div>
         `;
-        container.appendChild(item);
+        grid.appendChild(card);
       });
     }
 
@@ -179,16 +197,16 @@
         .eq('id_curso', idCurso);
 
       if (!error) {
-        renderizarListaCursosModal();
+        renderizarGradeCursosModal();
         carregarFiltroCursos();
       } else {
-        alert('Erro ao atualizar status do curso: ' + error.message);
+        alert('Falha ao atualizar curso: ' + error.message);
       }
     }
 
     async function adicionarCurso() {
       const input = document.getElementById('novoNomeCurso');
-      const nome = input.value.trim();
+      const nome = input.value.trim().toUpperCase();
 
       if (!nome) return;
 
@@ -200,7 +218,7 @@
         alert('Erro ao cadastrar curso: ' + error.message);
       } else {
         input.value = '';
-        renderizarListaCursosModal();
+        renderizarGradeCursosModal();
         carregarFiltroCursos();
       }
     }
@@ -322,7 +340,7 @@
       }
     }
 
-    // Inicialização ao carregar a página
+    // Inicialização ao abrir o painel
     document.addEventListener('DOMContentLoaded', async () => {
       await carregarFiltroCursos();
       renderizarTabela();
