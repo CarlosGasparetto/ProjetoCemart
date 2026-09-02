@@ -100,17 +100,7 @@
               required 
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:bg-white focus:outline-none transition font-medium"
             >
-              <option value="">Selecione</option>
-              <option value="Teatro">Teatro</option>
-              <option value="Desenho e Pintura em Tela">Desenho e Pintura</option>
-              <option value="Dança (Ballet / Contemporânea)">Dança</option>
-              <option value="Violão">Violão</option>
-              <option value="Viola">Viola</option>
-              <option value="Violino">Violino</option>
-              <option value="Trompete">Trompete</option>
-              <option value="Saxofone">Saxofone</option>
-              <option value="Clarinete">Clarinete</option>
-              <option value="Teclado / Piano">Teclado / Piano</option>
+              <option value="">Carregando cursos...</option>
             </select>
           </div>
 
@@ -174,6 +164,38 @@
   </footer>
 
   <script>
+    // Carrega dinamicamente a grade de cursos cadastrada no Supabase
+    async function carregarCursos() {
+      const selectCurso = document.getElementById('curso');
+      try {
+        const { data: listaCursos, error } = await db
+          .from('cursos')
+          .select('nome')
+          .eq('ativo', true)
+          .order('nome', { ascending: true });
+
+        if (error) throw error;
+
+        selectCurso.innerHTML = '<option value="">Selecione o curso</option>';
+        if (listaCursos && listaCursos.length > 0) {
+          listaCursos.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.nome;
+            opt.textContent = item.nome;
+            selectCurso.appendChild(opt);
+          });
+        } else {
+          selectCurso.innerHTML = '<option value="">Nenhum curso ativo</option>';
+        }
+      } catch (err) {
+        selectCurso.innerHTML = '<option value="">Erro ao carregar cursos</option>';
+        console.error('Falha ao obter lista de cursos:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', carregarCursos);
+
+    // Envio do formulário
     document.getElementById('formInscricao').addEventListener('submit', async function(e) {
       e.preventDefault();
       
@@ -197,16 +219,13 @@
       };
 
       try {
-        // Envia para o Supabase
         const { data, error } = await db.from('fila_cemart').insert([novoRegistro]);
-
         if (error) throw error;
 
-        // Exibe tela de sucesso
         document.getElementById('txtProtocolo').innerText = protocolo;
         document.getElementById('boxSucesso').classList.remove('hidden');
         document.getElementById('formInscricao').reset();
-        document.getElementById('nivel').value = 'Iniciante'; // Reseta para o padrão
+        document.getElementById('nivel').value = 'Iniciante';
       } catch (err) {
         alert('Erro ao salvar inscrição: ' + (err.message || 'Verifique a conexão.'));
       } finally {
