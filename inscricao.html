@@ -166,32 +166,32 @@
   <script>
     // Carrega dinamicamente a grade de cursos cadastrada no Supabase
     async function carregarCursos() {
-      const selectCurso = document.getElementById('curso');
-      try {
-        const { data: listaCursos, error } = await db
-          .from('cursos')
-          .select('nome')
-          .eq('ativo', true)
-          .order('nome', { ascending: true });
+  const selectCurso = document.getElementById('curso');
+  try {
+    const { data: listaCursos, error } = await db
+      .from('cursos')
+      .select('nome_curso')
+      .eq('ativo', true)
+      .order('nome_curso', { ascending: true });
 
-        if (error) throw error;
+    if (error) throw error;
 
-        selectCurso.innerHTML = '<option value="">Selecione o curso</option>';
-        if (listaCursos && listaCursos.length > 0) {
-          listaCursos.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.nome;
-            opt.textContent = item.nome;
-            selectCurso.appendChild(opt);
-          });
-        } else {
-          selectCurso.innerHTML = '<option value="">Nenhum curso ativo</option>';
-        }
-      } catch (err) {
-        selectCurso.innerHTML = '<option value="">Erro ao carregar cursos</option>';
-        console.error('Falha ao obter lista de cursos:', err);
-      }
+    selectCurso.innerHTML = '<option value="">Selecione o curso</option>';
+    if (listaCursos && listaCursos.length > 0) {
+      listaCursos.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.nome_curso;
+        opt.textContent = item.nome_curso;
+        selectCurso.appendChild(opt);
+      });
+    } else {
+      selectCurso.innerHTML = '<option value="">Nenhum curso ativo</option>';
     }
+  } catch (err) {
+    selectCurso.innerHTML = '<option value="">Erro ao carregar cursos</option>';
+    console.error('Falha ao obter lista de cursos:', err);
+  }
+}
 
     document.addEventListener('DOMContentLoaded', carregarCursos);
 
