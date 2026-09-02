@@ -37,8 +37,29 @@
     </div>
   </header>
 
-  <main class="max-w-2xl mx-auto px-6 py-10 flex-1 w-full flex flex-col justify-center">
-    <div class="text-center mb-8">
+  <main class="max-w-2xl mx-auto px-6 py-8 flex-1 w-full flex flex-col justify-center space-y-6">
+    
+    <!-- Banner Dinâmico de Instalação do App -->
+    <div id="bannerInstalacao" class="hidden bg-gradient-to-r from-indigo-700 to-indigo-900 text-white p-4 rounded-2xl shadow-md border border-indigo-500/40 flex items-center justify-between gap-3 transition">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-amber-400 text-lg shrink-0">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold leading-snug">Instalar App do CEMART</h4>
+          <p class="text-[11px] text-indigo-200">Acesse a fila direto pela tela do seu celular</p>
+        </div>
+      </div>
+      <button 
+        id="btnInstalarApp" 
+        onclick="instalarAplicativo()" 
+        class="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-indigo-950 font-bold text-xs rounded-xl shadow-xs transition shrink-0 flex items-center gap-1.5"
+      >
+        <i class="fa-solid fa-download"></i> Instalar
+      </button>
+    </div>
+
+    <div class="text-center">
       <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Portal de Inscrições e Vagas</h2>
       <p class="text-sm text-slate-500 mt-1">Selecione uma das opções abaixo para continuar</p>
     </div>
@@ -129,8 +150,51 @@
   </div>
 
   <script>
+    // --- Lógica de Instalação do PWA ---
+    let deferredPrompt = null;
+    const bannerInstalacao = document.getElementById('bannerInstalacao');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Impede o Chrome em versões antigas de exibir o banner automático feio
+      e.preventDefault();
+      // Guarda o evento para disparar no clique do botão
+      deferredPrompt = e;
+      // Exibe o banner visual
+      bannerInstalacao.classList.remove('hidden');
+    });
+
+    // Detecta iPhone / Safari para exibir instrução compatível
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+
+    const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+    if (isIos() && !isInStandaloneMode()) {
+      bannerInstalacao.classList.remove('hidden');
+    }
+
+    async function instalarAplicativo() {
+      if (deferredPrompt) {
+        // Dispara o prompt nativo de instalação
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          bannerInstalacao.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      } else if (isIos()) {
+        alert('Para instalar no iPhone:\n1. Toque no botão de Compartilhar (ícone com quadrado e seta para cima no Safari)\n2. Selecione "Adicionar à Tela de Início"');
+      }
+    }
+
+    window.addEventListener('appinstalled', () => {
+      bannerInstalacao.classList.add('hidden');
+    });
+
+    // --- Lógica de Acesso da Secretaria ---
     function abrirModalLogin() {
-      // Se já possui autenticação na sessão atual, vai direto
       if (sessionStorage.getItem('autenticado_cemart') === 'true') {
         window.location.href = 'painel-gestao.html';
         return;
