@@ -150,42 +150,36 @@
   </div>
 
   <script>
-    // --- Lógica de Instalação do PWA ---
+    // --- Lógica Garantida do Banner de Instalação PWA ---
     let deferredPrompt = null;
     const bannerInstalacao = document.getElementById('bannerInstalacao');
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      // Impede o Chrome em versões antigas de exibir o banner automático feio
-      e.preventDefault();
-      // Guarda o evento para disparar no clique do botão
-      deferredPrompt = e;
-      // Exibe o banner visual
-      bannerInstalacao.classList.remove('hidden');
-    });
+    // Detecta se já está rodando dentro do App instalado (Standalone)
+    const jaEstaInstalado = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-    // Detecta iPhone / Safari para exibir instrução compatível
-    const isIos = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      return /iphone|ipad|ipod/.test(userAgent);
-    };
-
-    const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-
-    if (isIos() && !isInStandaloneMode()) {
+    // Se NÃO estiver rodando como app instalado, mostra o banner para incentivar a instalação
+    if (!jaEstaInstalado) {
       bannerInstalacao.classList.remove('hidden');
     }
 
+    // Captura o prompt nativo do Android/Chrome
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      bannerInstalacao.classList.remove('hidden');
+    });
+
+    // Ação do Botão
     async function instalarAplicativo() {
       if (deferredPrompt) {
-        // Dispara o prompt nativo de instalação
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
           bannerInstalacao.classList.add('hidden');
         }
         deferredPrompt = null;
-      } else if (isIos()) {
-        alert('Para instalar no iPhone:\n1. Toque no botão de Compartilhar (ícone com quadrado e seta para cima no Safari)\n2. Selecione "Adicionar à Tela de Início"');
+      } else {
+        alert('Para instalar:\n\n• No Chrome: Toque no menu (3 pontinhos) no topo e selecione "Instalar aplicativo" (ou "Adicionar à tela inicial").\n\n• No iPhone: Toque no botão de Compartilhar e selecione "Adicionar à Tela de Início".');
       }
     }
 
