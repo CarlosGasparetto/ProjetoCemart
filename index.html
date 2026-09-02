@@ -7,6 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- Dependências Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+
   <!-- Configurações PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#312e81">
@@ -40,7 +44,7 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-      <!-- Opção 1: Inscrição Online -->
+      <!-- Inscrição Online -->
       <a href="inscricao.html" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-lg hover:border-indigo-500 transition duration-200 flex flex-col justify-between">
         <div>
           <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4">
@@ -56,7 +60,7 @@
         </div>
       </a>
 
-      <!-- Opção 2: Consulta Pública -->
+      <!-- Consulta Pública -->
       <a href="consulta.html" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-lg hover:border-indigo-500 transition duration-200 flex flex-col justify-between">
         <div>
           <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-4">
@@ -74,9 +78,109 @@
     </div>
   </main>
 
-  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-    <p>Centro Municipal de Artes de Barretos (CEMART) • Projeto de Extensão ADS</p>
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between px-6 max-w-4xl mx-auto w-full gap-2">
+    <p>Centro Municipal de Artes de Barretos (CEMART)</p>
+    <button onclick="abrirModalLogin()" class="text-slate-400 hover:text-indigo-600 transition flex items-center gap-1.5 text-[11px] font-semibold">
+      <i class="fa-solid fa-lock text-[10px]"></i> Acesso Secretaria
+    </button>
   </footer>
 
+  <!-- Modal de Senha da Secretaria -->
+  <div id="modalLogin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="text-center">
+        <div class="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center mx-auto mb-2 text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-800">Acesso Restrito</h3>
+        <p class="text-[11px] text-slate-500">Digite a senha institucional da secretaria</p>
+      </div>
+
+      <form onsubmit="validarAcesso(event)" class="space-y-3">
+        <div>
+          <input 
+            type="password" 
+            id="senhaInput" 
+            required 
+            placeholder="Senha de acesso..." 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+          >
+        </div>
+
+        <p id="erroLogin" class="text-[11px] text-rose-600 text-center font-medium hidden">
+          Senha incorreta. Tente novamente.
+        </p>
+
+        <button 
+          type="submit" 
+          id="btnEntrar"
+          class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+        >
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar no Painel
+        </button>
+      </form>
+
+      <div class="text-center pt-1">
+        <button onclick="fecharModalLogin()" class="text-slate-400 hover:text-slate-600 text-[11px] font-medium">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function abrirModalLogin() {
+      // Se já possui autenticação na sessão atual, vai direto
+      if (sessionStorage.getItem('autenticado_cemart') === 'true') {
+        window.location.href = 'painel-gestao.html';
+        return;
+      }
+      document.getElementById('erroLogin').classList.add('hidden');
+      document.getElementById('senhaInput').value = '';
+      document.getElementById('modalLogin').classList.remove('hidden');
+      document.getElementById('modalLogin').classList.add('flex');
+      document.getElementById('senhaInput').focus();
+    }
+
+    function fecharModalLogin() {
+      document.getElementById('modalLogin').classList.add('hidden');
+      document.getElementById('modalLogin').classList.remove('flex');
+    }
+
+    async function validarAcesso(e) {
+      e.preventDefault();
+      const senhaDigitada = document.getElementById('senhaInput').value;
+      const btn = document.getElementById('btnEntrar');
+      const erroEl = document.getElementById('erroLogin');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+      erroEl.classList.add('hidden');
+
+      try {
+        const { data, error } = await db
+          .from('config_sistema')
+          .select('valor')
+          .eq('chave', 'senha_gestao')
+          .single();
+
+        if (error) throw error;
+
+        if (data && data.valor === senhaDigitada) {
+          sessionStorage.setItem('autenticado_cemart', 'true');
+          window.location.href = 'painel-gestao.html';
+        } else {
+          erroEl.classList.remove('hidden');
+          document.getElementById('senhaInput').value = '';
+          document.getElementById('senhaInput').focus();
+        }
+      } catch (err) {
+        alert('Erro ao validar acesso. Verifique a conexão.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar no Painel';
+      }
+    }
+  </script>
 </body>
 </html>

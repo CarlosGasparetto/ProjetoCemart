@@ -33,6 +33,9 @@
       <a href="inscricao.html" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
         <i class="fa-solid fa-plus"></i> Digitar Nova Ficha
       </a>
+      <button onclick="sairDoPainel()" class="px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900 text-rose-300 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition ml-1" title="Encerrar Sessão">
+        <i class="fa-solid fa-power-off"></i> Sair
+      </button>
     </div>
   </header>
 
@@ -149,6 +152,16 @@
   </div>
 
   <script>
+    // --- Verificação Obrigatória de Sessão ---
+    if (sessionStorage.getItem('autenticado_cemart') !== 'true') {
+      window.location.href = 'index.html';
+    }
+
+    function sairDoPainel() {
+      sessionStorage.removeItem('autenticado_cemart');
+      window.location.href = 'index.html';
+    }
+
     // Controle do Modal QR Code
     function abrirModalQR() {
       const modal = document.getElementById('modalQR');
