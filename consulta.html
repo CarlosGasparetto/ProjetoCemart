@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEMART - Consultar Posição</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <header class="bg-indigo-900 text-white shadow-md">
+    <div class="max-w-xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="index.html" class="text-indigo-200 hover:text-white text-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-chevron-left"></i> Início
+      </a>
+      <h1 class="font-bold text-sm">Consulta de Fila • CEMART</h1>
+      <span class="w-12"></span>
+    </div>
+  </header>
+
+  <main class="max-w-xl mx-auto px-4 py-8 flex-1 w-full">
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6 mb-6">
+      <h2 class="text-lg font-bold text-slate-900 mb-1">Verificar Situação na Fila</h2>
+      <p class="text-xs text-slate-500 mb-4">Informe o CPF ou número de protocolo gerado na inscrição</p>
+
+      <div class="flex gap-2">
+        <input type="text" id="buscaDoc" placeholder="CPF ou Protocolo..." class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:bg-white focus:outline-none">
+        <button onclick="buscarFila()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition">
+          Consultar
+        </button>
+      </div>
+    </div>
+
+    <!-- Área de Exibição do Resultado -->
+    <div id="resultadoBusca" class="hidden"></div>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    CEMART Barretos • Transparência de Vagas
+  </footer>
+
+  <script>
+    function buscarFila() {
+      const termo = document.getElementById('buscaDoc').value.trim();
+      const resultadoDiv = document.getElementById('resultadoBusca');
+      const lista = JSON.parse(localStorage.getItem('cemart_fila') || '[]');
+
+      resultadoDiv.classList.remove('hidden');
+
+      const encontrado = lista.find(item => item.cpf === termo || item.protocolo.toLowerCase() === termo.toLowerCase());
+
+      if (!encontrado) {
+        resultadoDiv.innerHTML = `
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center text-xs text-amber-800">
+            Nenhuma inscrição encontrada com o dado informado. Verifique se digitou corretamente ou consulte a secretaria do CEMART.
+          </div>
+        `;
+        return;
+      }
+
+      // Calcula posição ordenada por data/hora na mesma turma
+      const mesmaFila = lista.filter(i => i.curso === encontrado.curso && i.periodo === encontrado.periodo && i.status === 'Aguardando');
+      const pos = mesmaFila.findIndex(i => i.protocolo === encontrado.protocolo) + 1;
+
+      resultadoDiv.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+          <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100 flex justify-between items-center">
+            <span class="text-xs font-bold text-indigo-900">${encontrado.protocolo}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${encontrado.status === 'Convocado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${encontrado.status}
+            </span>
+          </div>
+          <div class="p-5 space-y-3 text-xs">
+            <div class="flex justify-between py-1 border-b border-slate-100">
+              <span class="text-slate-500">Curso / Turno</span>
+              <span class="font-bold text-slate-800">${encontrado.curso} (${encontrado.periodo})</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-100">
+              <span class="text-slate-500">Posição Atual na Fila</span>
+              <span class="font-extrabold text-indigo-700 text-sm">${pos > 0 ? pos + 'º lugar' : '—'}</span>
+            </div>
+            ${encontrado.status === 'Convocado' ? `
+              <div class="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs">
+                <strong>Atenção:</strong> Vaga liberada! Compareça à secretaria do CEMART no prazo de 48h úteis com RG, CPF e Comprovante de Residência para efetivar sua matrícula.
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
