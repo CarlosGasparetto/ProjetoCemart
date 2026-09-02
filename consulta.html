@@ -7,13 +7,21 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Dependências do Supabase -->
+  <!-- Dependências Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+
+  <!-- Configurações PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#312e81">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
-  <!-- Cabeçalho -->
   <header class="bg-indigo-900 text-white shadow-md">
     <div class="max-w-xl mx-auto px-4 py-4 flex items-center justify-between">
       <a href="index.html" class="text-indigo-200 hover:text-white text-xs flex items-center gap-1.5 transition">
@@ -24,7 +32,6 @@
     </div>
   </header>
 
-  <!-- Painel de Busca -->
   <main class="max-w-xl mx-auto px-4 py-8 flex-1 w-full space-y-5">
     <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6">
       <h2 class="text-lg font-bold text-slate-900 mb-1">Verificar Situação na Fila</h2>
@@ -36,12 +43,12 @@
           id="buscaDoc" 
           required
           placeholder="Ex: CEM-2026-1234 ou Nome do aluno" 
-          class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:bg-white focus:outline-none transition"
+          class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-indigo-600 focus:bg-white focus:outline-none transition"
         >
         <button 
           type="submit" 
           id="btnBuscar"
-          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5"
+          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
         >
           <i class="fa-solid fa-magnifying-glass"></i>
           <span>Consultar</span>
@@ -49,8 +56,8 @@
       </form>
     </div>
 
-    <!-- Área de Exibição do Resultado -->
-    <div id="resultadoBusca" class="hidden"></div>
+    <!-- Área com Lista de Resultados -->
+    <div id="resultadoBusca" class="hidden space-y-4"></div>
   </main>
 
   <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
@@ -61,7 +68,7 @@
     async function buscarFila(e) {
       e.preventDefault();
       
-      const termo = document.getElementById('buscaDoc').value.trim();
+      const termo = document.getElementById('buscaDoc').value.trim().toUpperCase();
       const resultadoDiv = document.getElementById('resultadoBusca');
       const btn = document.getElementById('btnBuscar');
 
@@ -70,13 +77,12 @@
       resultadoDiv.classList.remove('hidden');
       resultadoDiv.innerHTML = `
         <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs text-center text-xs text-slate-400">
-          <i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Consultando base de dados do CEMART...
+          <i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Consultando registros do CEMART...
         </div>
       `;
       btn.disabled = true;
 
       try {
-        // Busca por protocolo exato ou por aproximação de nome
         const { data: resultados, error } = await db
           .from('fila_cemart')
           .select('*')
@@ -88,73 +94,68 @@
           resultadoDiv.innerHTML = `
             <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center text-xs text-amber-800">
               <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mb-1 block"></i>
-              Nenhum registro encontrado para <strong>"${termo}"</strong>. Verifique se o protocolo ou a grafia do nome estão corretos.
+              Nenhum registro encontrado para <strong>"${termo}"</strong>. Confira o protocolo ou nome cadastrado.
             </div>
           `;
           return;
         }
 
-        const encontrado = resultados[0];
+        resultadoDiv.innerHTML = '';
 
-        // Se estiver aguardando, calcula quantos estão na frente para o mesmo curso/período
-        let posicaoTexto = '—';
-        if (encontrado.status === 'Aguardando') {
-          const { count, error: countErr } = await db
-            .from('fila_cemart')
-            .select('*', { count: 'exact', head: true })
-            .eq('curso', encontrado.curso)
-            .eq('periodo', encontrado.periodo)
-            .eq('status', 'Aguardando')
-            .lte('criado_em', encontrado.criado_em);
+        // Itera por todos os cursos em que o aluno se inscreveu
+        for (const item of resultados) {
+          let posicaoTexto = '—';
+          if (item.status === 'Aguardando') {
+            const { count } = await db
+              .from('fila_cemart')
+              .select('*', { count: 'exact', head: true })
+              .eq('curso', item.curso)
+              .eq('periodo', item.periodo)
+              .eq('status', 'Aguardando')
+              .lte('criado_em', item.criado_em);
 
-          if (!countErr && count !== null) {
-            posicaoTexto = `${count}º lugar`;
+            if (count !== null) posicaoTexto = `${count}º lugar`;
           }
-        }
 
-        // Determina estilização do badge de status
-        let statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
-        if (encontrado.status === 'Convocado') {
-          statusBadgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-200';
-        } else if (encontrado.status === 'Matriculado') {
-          statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-        } else if (encontrado.status.includes('Desistente')) {
-          statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
-        }
+          let statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+          if (item.status === 'Convocado') statusBadgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-200';
+          else if (item.status === 'Matriculado') statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          else if (item.status.includes('Desistente')) statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
 
-        resultadoDiv.innerHTML = `
-          <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden';
+          card.innerHTML = `
             <div class="bg-slate-50 px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Protocolo</span>
-                <span class="text-xs font-mono font-bold text-slate-800">${encontrado.protocolo}</span>
+                <span class="text-xs font-mono font-bold text-slate-800">${item.protocolo}</span>
               </div>
               <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusBadgeClass}">
-                ${encontrado.status}
+                ${item.status}
               </span>
             </div>
 
             <div class="p-5 space-y-2.5 text-xs">
               <div class="flex justify-between py-1.5 border-b border-slate-100">
                 <span class="text-slate-500">Aluno</span>
-                <span class="font-bold text-slate-900">${encontrado.nome_aluno}</span>
+                <span class="font-bold text-slate-900">${item.nome_aluno}</span>
               </div>
 
-              ${encontrado.nome_responsavel ? `
+              ${item.nome_responsavel ? `
                 <div class="flex justify-between py-1.5 border-b border-slate-100">
                   <span class="text-slate-500">Responsável</span>
-                  <span class="font-medium text-slate-700">${encontrado.nome_responsavel}</span>
+                  <span class="font-medium text-slate-700">${item.nome_responsavel}</span>
                 </div>
               ` : ''}
 
               <div class="flex justify-between py-1.5 border-b border-slate-100">
                 <span class="text-slate-500">Curso / Nível</span>
-                <span class="font-medium text-slate-800">${encontrado.curso} • <strong>${encontrado.nivel || 'Iniciante'}</strong></span>
+                <span class="font-medium text-slate-800">${item.curso} • <strong>${item.nivel || 'Iniciante'}</strong></span>
               </div>
 
               <div class="flex justify-between py-1.5 border-b border-slate-100">
                 <span class="text-slate-500">Turno</span>
-                <span class="font-medium text-slate-800">${encontrado.periodo}</span>
+                <span class="font-medium text-slate-800">${item.periodo}</span>
               </div>
 
               <div class="flex justify-between py-1.5 border-b border-slate-100 items-center">
@@ -162,15 +163,16 @@
                 <span class="font-extrabold text-indigo-700 text-sm">${posicaoTexto}</span>
               </div>
 
-              ${encontrado.status === 'Convocado' ? `
+              ${item.status === 'Convocado' ? `
                 <div class="mt-4 p-3.5 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-950 text-[11px] leading-relaxed">
                   <strong class="font-bold block mb-0.5 text-indigo-900"><i class="fa-solid fa-bullhorn mr-1"></i> Vaga Convocada!</strong>
-                  Compareça à secretaria do CEMART no prazo regulamentar munido de documento de identificação e comprovante de residência para efetivar a matrícula.
+                  Compareça à secretaria do CEMART com RG, CPF e Comprovante de Residência para efetivar a matrícula.
                 </div>
               ` : ''}
             </div>
-          </div>
-        `;
+          `;
+          resultadoDiv.appendChild(card);
+        }
 
       } catch (err) {
         resultadoDiv.innerHTML = `

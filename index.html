@@ -6,11 +6,20 @@
   <title>CEMART - Portal de Fila de Espera</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Configurações PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#312e81">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
   <header class="bg-indigo-900 text-white shadow-md">
-    <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div class="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="bg-indigo-700 p-2.5 rounded-xl text-amber-400">
           <i class="fa-solid fa-palette text-2xl"></i>
@@ -24,13 +33,13 @@
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-6 py-10 flex-1 w-full flex flex-col justify-center">
+  <main class="max-w-2xl mx-auto px-6 py-10 flex-1 w-full flex flex-col justify-center">
     <div class="text-center mb-8">
       <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Portal de Inscrições e Vagas</h2>
       <p class="text-sm text-slate-500 mt-1">Selecione uma das opções abaixo para continuar</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
       <!-- Opção 1: Inscrição Online -->
       <a href="inscricao.html" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-lg hover:border-indigo-500 transition duration-200 flex flex-col justify-between">
         <div>
@@ -39,7 +48,7 @@
           </div>
           <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Candidato</span>
           <h3 class="text-lg font-bold text-slate-900 mt-1 mb-1">Inscrição Online</h3>
-          <p class="text-xs text-slate-500">Cadastre-se na lista de espera para vagas e oficinas artísticas.</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Cadastre-se na lista de espera para vagas e oficinas artísticas.</p>
         </div>
         <div class="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-indigo-600 text-xs font-bold">
           <span>Inscrever-se</span>
@@ -55,26 +64,10 @@
           </div>
           <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600">Munícipe</span>
           <h3 class="text-lg font-bold text-slate-900 mt-1 mb-1">Consultar Posição</h3>
-          <p class="text-xs text-slate-500">Acompanhe sua classificação na fila e prazos de convocação.</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Acompanhe sua classificação na fila e prazos de convocação.</p>
         </div>
         <div class="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-amber-600 text-xs font-bold">
           <span>Ver Status</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </div>
-      </a>
-
-      <!-- Opção 3: Painel da Secretaria -->
-      <a href="painel-gestao.html" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-lg hover:border-slate-800 transition duration-200 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-slate-800 text-white flex items-center justify-center text-xl mb-4">
-            <i class="fa-solid fa-lock"></i>
-          </div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Secretaria</span>
-          <h3 class="text-lg font-bold text-slate-900 mt-1 mb-1">Gestão de Vagas</h3>
-          <p class="text-xs text-slate-500">Digitação de fichas, controle de turmas e chamadas para matrícula.</p>
-        </div>
-        <div class="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-slate-800 text-xs font-bold">
-          <span>Acessar Painel</span>
           <i class="fa-solid fa-arrow-right"></i>
         </div>
       </a>
