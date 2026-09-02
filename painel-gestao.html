@@ -19,9 +19,14 @@
       <span class="bg-indigo-600 px-2 py-1 rounded text-xs font-bold text-amber-400">CEMART</span>
       <h1 class="text-sm font-bold">Gestão da Fila de Espera • Secretaria</h1>
     </div>
+    
+    <!-- Ações agrupadas à direita -->
     <div class="flex items-center gap-2">
       <button onclick="renderizarTabela()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition" title="Atualizar Dados">
         <i class="fa-solid fa-arrows-rotate"></i> Atualizar
+      </button>
+      <button onclick="abrirModalCursos()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-list-check"></i> Gerenciar Cursos
       </button>
       <a href="inscricao.html" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
         <i class="fa-solid fa-plus"></i> Digitar Nova Ficha
@@ -90,22 +95,131 @@
 
   </main>
 
+  <!-- Modal de Gestão de Cursos -->
+  <div id="modalCursos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-800">Grade de Oficinas e Cursos</h3>
+        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-base">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Cadastro de Novo Curso -->
+      <div class="flex gap-2">
+        <input type="text" id="novoNomeCurso" placeholder="Nome da nova oficina..." class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        <button onclick="adicionarCurso()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1">
+          <i class="fa-solid fa-plus"></i> Adicionar
+        </button>
+      </div>
+
+      <!-- Lista com Botões de Ativar/Desativar -->
+      <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-100" id="listaCursosModal">
+        <!-- Preenchido via JavaScript -->
+      </div>
+
+      <div class="text-right pt-2">
+        <button onclick="fecharModalCursos()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">
+          Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script>
-    // Carrega a lista de cursos dinamicamente no filtro
+    // --- Funções do Modal de Gestão de Cursos ---
+    function abrirModalCursos() {
+      const modal = document.getElementById('modalCursos');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      renderizarListaCursosModal();
+    }
+
+    function fecharModalCursos() {
+      const modal = document.getElementById('modalCursos');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function renderizarListaCursosModal() {
+      const container = document.getElementById('listaCursosModal');
+      container.innerHTML = '<p class="p-3 text-center text-xs text-slate-400">Carregando oficinas...</p>';
+
+      const { data: lista, error } = await db
+        .from('cursos')
+        .select('id_curso, nome_curso, ativo')
+        .order('nome_curso', { ascending: true });
+
+      if (error) {
+        container.innerHTML = '<p class="p-3 text-center text-xs text-red-500">Erro ao carregar cursos.</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      lista.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'p-2.5 flex items-center justify-between text-xs hover:bg-slate-50';
+        
+        item.innerHTML = `
+          <span class="font-medium ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${c.nome_curso}</span>
+          <button onclick="alternarStatusCurso(${c.id_curso}, ${!c.ativo})" class="px-2.5 py-1 rounded-md text-[10px] font-bold transition ${c.ativo ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}">
+            ${c.ativo ? '<i class="fa-solid fa-check mr-1"></i> Ativo' : '<i class="fa-solid fa-ban mr-1"></i> Inativo'}
+          </button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    async function alternarStatusCurso(idCurso, novoStatus) {
+      const { error } = await db
+        .from('cursos')
+        .update({ ativo: novoStatus })
+        .eq('id_curso', idCurso);
+
+      if (!error) {
+        renderizarListaCursosModal();
+        carregarFiltroCursos();
+      } else {
+        alert('Erro ao atualizar status do curso: ' + error.message);
+      }
+    }
+
+    async function adicionarCurso() {
+      const input = document.getElementById('novoNomeCurso');
+      const nome = input.value.trim();
+
+      if (!nome) return;
+
+      const { error } = await db
+        .from('cursos')
+        .insert([{ nome_curso: nome, ativo: true }]);
+
+      if (error) {
+        alert('Erro ao cadastrar curso: ' + error.message);
+      } else {
+        input.value = '';
+        renderizarListaCursosModal();
+        carregarFiltroCursos();
+      }
+    }
+
+    // --- Funções da Tabela de Gestão da Fila ---
     async function carregarFiltroCursos() {
       const selectFiltro = document.getElementById('filtroCurso');
       try {
         const { data: listaCursos, error } = await db
           .from('cursos')
-          .select('nome')
-          .order('nome', { ascending: true });
+          .select('nome_curso')
+          .order('nome_curso', { ascending: true });
 
         if (!error && listaCursos) {
           selectFiltro.innerHTML = '<option value="">Todos os Cursos</option>';
           listaCursos.forEach(c => {
             const opt = document.createElement('option');
-            opt.value = c.nome;
-            opt.textContent = c.nome;
+            opt.value = c.nome_curso;
+            opt.textContent = c.nome_curso;
             selectFiltro.appendChild(opt);
           });
         }
@@ -208,7 +322,7 @@
       }
     }
 
-    // Inicialização simultânea ao abrir o painel
+    // Inicialização ao carregar a página
     document.addEventListener('DOMContentLoaded', async () => {
       await carregarFiltroCursos();
       renderizarTabela();
