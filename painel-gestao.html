@@ -35,7 +35,10 @@
         </div>
       </div>
 
-      <div class="flex items-center space-x-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="abrirModalCursos()" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 rounded-xl text-xs font-semibold transition border border-indigo-500/50 flex items-center gap-1.5">
+          <i class="fa-solid fa-graduation-cap text-xs text-amber-400"></i> Gerenciar Cursos
+        </button>
         <button onclick="abrirModalQRCode()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-indigo-950 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5">
           <i class="fa-solid fa-qrcode text-xs"></i> Gerar QR Code
         </button>
@@ -133,6 +136,46 @@
     </div>
   </main>
 
+  <!-- Modal de Gerenciamento de Cursos -->
+  <div id="modalCursos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800">Cursos e Oficinas Artísticas</h3>
+          <p class="text-xs text-slate-500">Ative, desative ou cadastre novos cursos</p>
+        </div>
+        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Formulário de Novo Curso -->
+      <form onsubmit="adicionarCurso(event)" class="flex gap-2">
+        <input 
+          type="text" 
+          id="novoCursoInput" 
+          required 
+          placeholder="Nome do novo curso..." 
+          class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+        >
+        <button type="submit" id="btnAdicionarCurso" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-xs transition shrink-0">
+          Cadastrar
+        </button>
+      </form>
+
+      <!-- Lista de Cursos -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-100 pr-1" id="listaCursosModal">
+        <p class="text-center py-4 text-xs text-slate-400">Carregando cursos...</p>
+      </div>
+
+      <div class="pt-2 text-right border-t border-slate-100">
+        <button onclick="fecharModalCursos()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-xs transition">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal do QR Code -->
   <div id="modalQRCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
@@ -192,6 +235,7 @@
       try {
         const { data: cursos } = await db.from('cursos').select('nome_curso').eq('ativo', true).order('nome_curso');
         const select = document.getElementById('filtroCurso');
+        select.innerHTML = '<option value="">Todos os Cursos</option>';
         if (cursos) {
           cursos.forEach(c => {
             const opt = document.createElement('option');
@@ -247,7 +291,6 @@
           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         }) : '-';
 
-        // Mapeia tanto nome_aluno quanto nome_completo para evitar 'undefined'
         const nomeExibicao = reg.nome_aluno || reg.nome_completo || 'Sem Nome';
         const cpfExibicao = reg.cpf || 'Não informado';
         const responsavelExibicao = reg.nome_responsavel && reg.nome_responsavel !== 'EMPTY' ? ` • Resp: ${reg.nome_responsavel}` : '';
@@ -336,6 +379,102 @@
       }
     }
 
+    // --- Gerenciamento de Cursos (Modal) ---
+    async function abrirModalCursos() {
+      const modal = document.getElementById('modalCursos');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      await listarCursosModal();
+    }
+
+    function fecharModalCursos() {
+      const modal = document.getElementById('modalCursos');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      carregarCursosFiltro();
+    }
+
+    async function listarCursosModal() {
+      const listaEl = document.getElementById('listaCursosModal');
+      listaEl.innerHTML = '<p class="text-center py-4 text-xs text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</p>';
+
+      try {
+        const { data: cursos, error } = await db
+          .from('cursos')
+          .select('*')
+          .order('nome_curso', { ascending: true });
+
+        if (error) throw error;
+
+        listaEl.innerHTML = '';
+        cursos.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'py-2.5 flex items-center justify-between gap-2';
+          div.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${c.ativo ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+              <span class="text-xs font-semibold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${c.nome_curso}</span>
+            </div>
+            <button 
+              onclick="alternarStatusCurso(${c.id_curso}, ${c.ativo})"
+              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
+                c.ativo 
+                  ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100' 
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+              }"
+            >
+              ${c.ativo ? 'Inativar' : 'Ativar'}
+            </button>
+          `;
+          listaEl.appendChild(div);
+        });
+      } catch (e) {
+        listaEl.innerHTML = '<p class="text-center py-4 text-xs text-rose-500">Erro ao listar cursos.</p>';
+      }
+    }
+
+    async function alternarStatusCurso(idCurso, statusAtual) {
+      try {
+        const { error } = await db
+          .from('cursos')
+          .update({ ativo: !statusAtual })
+          .eq('id_curso', idCurso);
+
+        if (error) throw error;
+        await listarCursosModal();
+      } catch (e) {
+        alert('Erro ao alterar status do curso.');
+      }
+    }
+
+    async function adicionarCurso(e) {
+      e.preventDefault();
+      const input = document.getElementById('novoCursoInput');
+      const nome = input.value.trim().toUpperCase();
+      const btn = document.getElementById('btnAdicionarCurso');
+
+      if (!nome) return;
+
+      btn.disabled = true;
+      btn.innerText = 'Salvando...';
+
+      try {
+        const { error } = await db
+          .from('cursos')
+          .insert([{ nome_curso: nome, ativo: true }]);
+
+        if (error) throw error;
+
+        input.value = '';
+        await listarCursosModal();
+      } catch (err) {
+        alert('Erro ao cadastrar curso. Verifique se o nome já existe.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Cadastrar';
+      }
+    }
+
     // --- Modal QR Code ---
     let qrcodeInstancia = null;
     function abrirModalQRCode() {
@@ -345,7 +484,6 @@
       modal.classList.add('flex');
 
       if (!qrcodeInstancia) {
-        // Gera o QR Code com o endereço base do sistema
         const urlApp = window.location.origin + window.location.pathname.replace('painel-gestao.html', 'index.html');
         qrcodeInstancia = new QRCode(area, {
           text: urlApp,
@@ -385,7 +523,7 @@
       link.click();
     }
 
-    // --- Modal Senha com RPC ---
+    // --- Modal Senha via RPC Seguro ---
     function abrirModalSenha() {
       document.getElementById('senhaAtualInput').value = '';
       document.getElementById('senhaNovaInput').value = '';
