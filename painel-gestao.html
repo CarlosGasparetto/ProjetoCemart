@@ -200,7 +200,7 @@
     </div>
   </div>
 
-  <!-- Modal de Alteração de Senha -->
+  <!-- Modal de Alteração de Senha via RPC -->
   <div id="modalSenha" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-xl border border-slate-200 space-y-4">
       <h3 class="text-sm font-bold text-slate-800">Alterar Senha de Gestão</h3>
@@ -229,6 +229,7 @@
       carregarDadosFila();
     });
 
+    // Formata o telefone apenas para exibição visual
     function formatarTelefoneExibicao(tel) {
       if (!tel) return 'Não informado';
       const d = tel.toString().replace(/\D/g, '');
@@ -332,20 +333,14 @@
           </td>
           <td class="px-4 py-3 text-right">
             <div class="inline-flex items-center gap-1.5">
-              ${reg.status === 'Aguardando' ? `
+              ${reg.status === 'Aguardando' && telNumeros ? `
                 <button 
-                  onclick="convocarCandidato(${reg.id}, '${encodeURIComponent(nomeExibicao)}', '${telNumeros}', '${encodeURIComponent(reg.curso || '')}')" 
-                  class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold transition shadow-2xs flex items-center gap-1"
-                  title="Convocar candidato para matrícula"
+                  onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(nomeExibicao)}', '${telNumeros}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}', '${encodeURIComponent(reg.protocolo || '')}')" 
+                  class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs flex items-center gap-1.5"
+                  title="Convocar via WhatsApp oficial"
                 >
-                  <i class="fa-solid fa-bullhorn text-[10px]"></i> Convocar
+                  <i class="fa-brands fa-whatsapp text-xs"></i> Convocar
                 </button>
-              ` : ''}
-
-              ${telNumeros ? `
-                <a href="https://wa.me/55${telNumeros}?text=Olá%20${encodeURIComponent(nomeExibicao)},%20aqui%20é%20da%20secretaria%20do%20CEMART." target="_blank" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition" title="Chamar no WhatsApp">
-                  <i class="fa-brands fa-whatsapp text-sm"></i>
-                </a>
               ` : ''}
 
               <select onchange="atualizarStatus(${reg.id}, this.value)" class="text-[11px] px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg focus:outline-none">
@@ -361,13 +356,17 @@
       });
     }
 
-    async function convocarCandidato(id, nomeCodificado, telefone, cursoCodificado) {
+    async function convocarWhatsApp(id, nomeCodificado, telefone, cursoCodificado, periodoCodificado, protocoloCodificado) {
       const nome = decodeURIComponent(nomeCodificado);
       const curso = decodeURIComponent(cursoCodificado);
+      const periodo = decodeURIComponent(periodoCodificado);
+      const protocolo = decodeURIComponent(protocoloCodificado);
 
-      if (!confirm(`Deseja convocar ${nome} para a vaga de ${curso}? O status passará para 'Convocado'.`)) {
-        return;
-      }
+      const confirmacao = confirm(
+        `Confirmar convocação de ${nome}?\n\nO status será atualizado para "Convocado" no sistema e o WhatsApp abrirá com a mensagem institucional pronta.`
+      );
+
+      if (!confirmacao) return;
 
       try {
         const { error } = await db
@@ -377,15 +376,22 @@
 
         if (error) throw error;
 
-        // Abre o WhatsApp com a mensagem de convocação pronta se tiver telefone
-        if (telefone) {
-          const mensagem = `Olá ${nome}! Aqui é da secretaria do CEMART. Informamos que surgiu uma vaga para você no curso de *${curso}*. Por favor, compareça à nossa secretaria com seus documentos para formalizar sua matrícula.`;
-          window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`, '_blank');
-        }
+        const mensagem = 
+          `*CEMART - CENTRO MUNICIPAL DE ARTES*\n` +
+          `*CONVOCAÇÃO DE VAGA*\n\n` +
+          `Olá, *${nome}*!\n\n` +
+          `Informamos que surgiu uma vaga disponível para você na oficina de *${curso}* (${periodo})!\n` +
+          `Seu protocolo de inscrição é: *${protocolo}*.\n\n` +
+          `📌 *Próximo passo:* Compareça à secretaria do CEMART no prazo de até *2 dias úteis* munido de documento de identidade para efetivar a sua matrícula.\n\n` +
+          `Caso não tenha mais interesse na vaga, favor responder a esta mensagem para que possamos liberar a oportunidade para o próximo da fila.\n\n` +
+          `Atenciosamente,\n*Secretaria CEMART*`;
+
+        const urlWhatsApp = `https://api.whatsapp.com/send?phone=55${telefone}&text=${encodeURIComponent(mensagem)}`;
+        window.open(urlWhatsApp, '_blank');
 
         await carregarDadosFila();
       } catch (err) {
-        alert('Erro ao realizar a convocação.');
+        alert('Erro ao registrar a convocação no banco.');
       }
     }
 
@@ -578,7 +584,7 @@
       link.click();
     }
 
-    // --- Modal Senha ---
+    // --- Modal Senha via RPC Seguro ---
     function abrirModalSenha() {
       document.getElementById('senhaAtualInput').value = '';
       document.getElementById('senhaNovaInput').value = '';
