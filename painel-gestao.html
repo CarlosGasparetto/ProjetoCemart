@@ -85,7 +85,7 @@
             type="text" 
             id="buscaTexto" 
             oninput="filtrarTabela()" 
-            placeholder="Buscar por nome, CPF ou protocolo..." 
+            placeholder="Buscar por aluno, responsável, telefone ou protocolo..." 
             class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
           >
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
@@ -116,8 +116,8 @@
           <thead class="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
             <tr>
               <th class="px-4 py-3 text-center">Pos.</th>
-              <th class="px-4 py-3">Candidato / Contato</th>
-              <th class="px-4 py-3">Curso / Período</th>
+              <th class="px-4 py-3">Candidato / Contatos</th>
+              <th class="px-4 py-3">Curso / Informações</th>
               <th class="px-4 py-3">Inscrição</th>
               <th class="px-4 py-3">Status</th>
               <th class="px-4 py-3 text-right">Ações da Secretaria</th>
@@ -229,9 +229,9 @@
       carregarDadosFila();
     });
 
-    // Formata o telefone apenas para exibição visual
+    // Formatação visual com máscara de telefone
     function formatarTelefoneExibicao(tel) {
-      if (!tel) return 'Não informado';
+      if (!tel) return '';
       const d = tel.toString().replace(/\D/g, '');
       if (d.length === 11) {
         return d.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
@@ -301,11 +301,26 @@
           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         }) : '-';
 
-        const nomeExibicao = reg.nome_aluno || reg.nome_completo || 'Sem Nome';
-        const cpfExibicao = reg.cpf || 'Não informado';
-        const telFormatado = formatarTelefoneExibicao(reg.telefone);
-        const telNumeros = (reg.telefone || '').toString().replace(/\D/g, '');
-        const responsavelExibicao = reg.nome_responsavel && reg.nome_responsavel !== 'EMPTY' ? ` • Resp: ${reg.nome_responsavel}` : '';
+        const nomeExibicao = reg.nome_aluno || 'Sem Nome';
+        
+        // Telefones (fone1 e fone2)
+        const fonePrincipal = reg.fone1 ? reg.fone1.toString().replace(/\D/g, '') : '';
+        const foneSecundario = reg.fone2 ? reg.fone2.toString().replace(/\D/g, '') : '';
+        
+        let textoContatos = '';
+        if (fonePrincipal) textoContatos += formatarTelefoneExibicao(fonePrincipal);
+        if (foneSecundario) textoContatos += (textoContatos ? ' / ' : '') + formatarTelefoneExibicao(foneSecundario);
+        if (!textoContatos) textoContatos = 'Sem telefone';
+
+        const telParaWhatsApp = fonePrincipal || foneSecundario;
+
+        // Responsável
+        const responsavelExibicao = reg.nome_responsavel && reg.nome_responsavel.trim() !== '' && reg.nome_responsavel !== 'EMPTY' 
+          ? ` • <span class="text-slate-500 font-medium">Resp: ${reg.nome_responsavel}</span>` 
+          : '';
+
+        // Nível do curso
+        const nivelBadge = reg.nivel ? ` • Nível: <span class="font-medium text-slate-600">${reg.nivel}</span>` : '';
 
         let statusClass = 'bg-amber-100 text-amber-800 border-amber-200';
         if (reg.status === 'Convocado') statusClass = 'bg-blue-100 text-blue-800 border-blue-200';
@@ -317,15 +332,14 @@
         tr.innerHTML = `
           <td class="px-4 py-3 font-bold text-center text-indigo-700">${posicaoTexto}</td>
           <td class="px-4 py-3">
-            <p class="font-bold text-slate-800">${nomeExibicao}</p>
-            <p class="text-[11px] text-slate-400">CPF: ${cpfExibicao}${responsavelExibicao}</p>
-            <p class="text-[11px] text-slate-500 font-medium mt-0.5">
-              <i class="fa-solid fa-phone text-[10px] text-slate-400"></i> ${telFormatado} • Prot: <span class="font-mono text-indigo-600">${reg.protocolo || '-'}</span>
+            <p class="font-bold text-slate-800">${nomeExibicao}${responsavelExibicao}</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+              <i class="fa-solid fa-phone text-[10px] text-slate-400 mr-1"></i>${textoContatos} • Prot: <span class="font-mono font-bold text-indigo-600">${reg.protocolo || '-'}</span>
             </p>
           </td>
           <td class="px-4 py-3">
-            <span class="font-medium text-slate-700">${reg.curso || '-'}</span>
-            <p class="text-[11px] text-slate-400">${reg.periodo || 'Não informado'}</p>
+            <span class="font-bold text-slate-700">${reg.curso || '-'}</span>
+            <p class="text-[11px] text-slate-400">${reg.periodo || 'Não informado'}${nivelBadge}</p>
           </td>
           <td class="px-4 py-3 text-[11px] text-slate-500">${dataFormatada}</td>
           <td class="px-4 py-3">
@@ -333,9 +347,9 @@
           </td>
           <td class="px-4 py-3 text-right">
             <div class="inline-flex items-center gap-1.5">
-              ${reg.status === 'Aguardando' && telNumeros ? `
+              ${reg.status === 'Aguardando' && telParaWhatsApp ? `
                 <button 
-                  onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(nomeExibicao)}', '${telNumeros}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}', '${encodeURIComponent(reg.protocolo || '')}')" 
+                  onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(nomeExibicao)}', '${telParaWhatsApp}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}', '${encodeURIComponent(reg.protocolo || '')}')" 
                   class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs flex items-center gap-1.5"
                   title="Convocar via WhatsApp oficial"
                 >
@@ -408,11 +422,12 @@
       const status = document.getElementById('filtroStatus').value;
 
       const filtrados = registrosGlobais.filter(r => {
-        const nome = (r.nome_aluno || r.nome_completo || '').toLowerCase();
-        const cpf = (r.cpf || '');
+        const nome = (r.nome_aluno || '').toLowerCase();
+        const resp = (r.nome_responsavel || '').toLowerCase();
+        const fone = (r.fone1 || '') + (r.fone2 || '');
         const protocolo = (r.protocolo || '').toLowerCase();
 
-        const bateTexto = nome.includes(texto) || cpf.includes(texto) || protocolo.includes(texto);
+        const bateTexto = nome.includes(texto) || resp.includes(texto) || fone.includes(texto) || protocolo.includes(texto);
         const bateCurso = curso === '' || r.curso === curso;
         const bateStatus = status === '' || r.status === status;
         return bateTexto && bateCurso && bateStatus;
@@ -568,13 +583,14 @@
         alert('Não há registros para exportar.');
         return;
       }
-      let csv = '\uFEFFProtocolo;Aluno;Responsável;Telefone;CPF;Curso;Período;Status;Data de Inscrição\n';
+      let csv = '\uFEFFProtocolo;Aluno;Responsável;Telefone 1;Telefone 2;Curso;Período;Nível;Status;Data de Inscrição\n';
       registrosGlobais.forEach(r => {
-        const nome = r.nome_aluno || r.nome_completo || '';
+        const nome = r.nome_aluno || '';
         const resp = r.nome_responsavel || '';
-        const tel = formatarTelefoneExibicao(r.telefone);
+        const tel1 = formatarTelefoneExibicao(r.fone1 || '');
+        const tel2 = formatarTelefoneExibicao(r.fone2 || '');
         const data = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '';
-        csv += `"${r.protocolo || ''}";"${nome}";"${resp}";"${tel}";"${r.cpf || ''}";"${r.curso || ''}";"${r.periodo || ''}";"${r.status || ''}";"${data}"\n`;
+        csv += `"${r.protocolo || ''}";"${nome}";"${resp}";"${tel1}";"${tel2}";"${r.curso || ''}";"${r.periodo || ''}";"${r.nivel || ''}";"${r.status || ''}";"${data}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -584,7 +600,7 @@
       link.click();
     }
 
-    // --- Modal Senha via RPC Seguro ---
+    // --- Modal de Senha via RPC Seguro ---
     function abrirModalSenha() {
       document.getElementById('senhaAtualInput').value = '';
       document.getElementById('senhaNovaInput').value = '';
