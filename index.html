@@ -39,7 +39,7 @@
 
   <main class="max-w-2xl mx-auto px-6 py-8 flex-1 w-full flex flex-col justify-center space-y-6">
     
-    <!-- Banner Dinâmico de Instalação do App (só aparece se o app não estiver instalado) -->
+    <!-- Banner de Instalação (só surge se o app não estiver instalado) -->
     <div id="bannerInstalacao" class="hidden bg-gradient-to-r from-indigo-700 to-indigo-900 text-white p-4 rounded-2xl shadow-md border border-indigo-500/40 flex items-center justify-between gap-3 transition">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-amber-400 text-lg shrink-0">
@@ -154,15 +154,12 @@
     let deferredPrompt = null;
     const bannerInstalacao = document.getElementById('bannerInstalacao');
 
-    // O banner só se torna visível se o navegador disparar o evento de elegibilidade de instalação
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      // Revela o banner apenas para quem ainda NÃO tem o app instalado
       bannerInstalacao.classList.remove('hidden');
     });
 
-    // Ação do Botão
     async function instalarAplicativo() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -174,13 +171,12 @@
       }
     }
 
-    // Oculta imediatamente se a instalação for concluída com sucesso
     window.addEventListener('appinstalled', () => {
       bannerInstalacao.classList.add('hidden');
       deferredPrompt = null;
     });
 
-    // --- Lógica de Acesso da Secretaria ---
+    // --- Lógica de Acesso da Secretaria via RPC Seguro ---
     function abrirModalLogin() {
       if (sessionStorage.getItem('autenticado_cemart') === 'true') {
         window.location.href = 'painel-gestao.html';
@@ -209,15 +205,14 @@
       erroEl.classList.add('hidden');
 
       try {
-        const { data, error } = await db
-          .from('config_sistema')
-          .select('valor')
-          .eq('chave', 'senha_gestao')
-          .single();
+        // Chamada direta à função RPC do PostgreSQL (impede leitura da tabela config_sistema)
+        const { data: senhaValida, error } = await db.rpc('verificar_senha_gestao', {
+          senha_digitada: senhaDigitada
+        });
 
         if (error) throw error;
 
-        if (data && data.valor === senhaDigitada) {
+        if (senhaValida === true) {
           sessionStorage.setItem('autenticado_cemart', 'true');
           window.location.href = 'painel-gestao.html';
         } else {
@@ -226,7 +221,7 @@
           document.getElementById('senhaInput').focus();
         }
       } catch (err) {
-        alert('Erro ao validar acesso. Verifique a conexão.');
+        alert('Erro ao validar acesso. Verifique a conexão com o banco.');
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar no Painel';
