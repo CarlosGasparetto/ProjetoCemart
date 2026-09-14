@@ -136,19 +136,20 @@
     </div>
   </main>
 
-  <!-- Modal de Gerenciamento de Cursos -->
+  <!-- Modal de Gerenciamento de Cursos com Períodos -->
   <div id="modalCursos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
-          <h3 class="text-sm font-bold text-slate-800">Cursos e Oficinas Artísticas</h3>
-          <p class="text-xs text-slate-500">Ative, desative ou cadastre novos cursos</p>
+          <h3 class="text-sm font-bold text-slate-800">Cursos e Períodos Ofertados</h3>
+          <p class="text-xs text-slate-500">Ative/desative turnos individuais ou cadastre novas oficinas</p>
         </div>
         <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-sm">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
+      <!-- Cadastro de Curso -->
       <form onsubmit="adicionarCurso(event)" class="flex gap-2">
         <input 
           type="text" 
@@ -162,6 +163,7 @@
         </button>
       </form>
 
+      <!-- Lista de Cursos com Chips de Período -->
       <div class="flex-1 overflow-y-auto divide-y divide-slate-100 pr-1" id="listaCursosModal">
         <p class="text-center py-4 text-xs text-slate-400">Carregando cursos...</p>
       </div>
@@ -200,7 +202,7 @@
     </div>
   </div>
 
-  <!-- Modal de Alteração de Senha via RPC -->
+  <!-- Modal de Alteração de Senha via RPC Seguro -->
   <div id="modalSenha" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-xl border border-slate-200 space-y-4">
       <h3 class="text-sm font-bold text-slate-800">Alterar Senha de Gestão</h3>
@@ -229,7 +231,6 @@
       carregarDadosFila();
     });
 
-    // Formatação visual com máscara de telefone
     function formatarTelefoneExibicao(tel) {
       if (!tel) return '';
       const d = tel.toString().replace(/\D/g, '');
@@ -303,7 +304,6 @@
 
         const nomeExibicao = reg.nome_aluno || 'Sem Nome';
         
-        // Telefones (fone1 e fone2)
         const fonePrincipal = reg.fone1 ? reg.fone1.toString().replace(/\D/g, '') : '';
         const foneSecundario = reg.fone2 ? reg.fone2.toString().replace(/\D/g, '') : '';
         
@@ -314,12 +314,10 @@
 
         const telParaWhatsApp = fonePrincipal || foneSecundario;
 
-        // Responsável
         const responsavelExibicao = reg.nome_responsavel && reg.nome_responsavel.trim() !== '' && reg.nome_responsavel !== 'EMPTY' 
           ? ` • <span class="text-slate-500 font-medium">Resp: ${reg.nome_responsavel}</span>` 
           : '';
 
-        // Nível do curso
         const nivelBadge = reg.nivel ? ` • Nível: <span class="font-medium text-slate-600">${reg.nivel}</span>` : '';
 
         let statusClass = 'bg-amber-100 text-amber-800 border-amber-200';
@@ -454,7 +452,7 @@
       }
     }
 
-    // --- Gerenciamento de Cursos ---
+    // --- Gerenciamento de Cursos e Períodos ---
     async function abrirModalCursos() {
       const modal = document.getElementById('modalCursos');
       modal.classList.remove('hidden');
@@ -484,27 +482,83 @@
         listaEl.innerHTML = '';
         cursos.forEach(c => {
           const div = document.createElement('div');
-          div.className = 'py-2.5 flex items-center justify-between gap-2';
+          div.className = 'py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
           div.innerHTML = `
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full ${c.ativo ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
-              <span class="text-xs font-semibold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${c.nome_curso}</span>
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 ${c.ativo ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+              <span class="text-xs font-bold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${c.nome_curso}</span>
             </div>
-            <button 
-              onclick="alternarStatusCurso(${c.id_curso}, ${c.ativo})"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
-                c.ativo 
-                  ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100' 
-                  : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
-              }"
-            >
-              ${c.ativo ? 'Inativar' : 'Ativar'}
-            </button>
+
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button 
+                onclick="alternarTurnoCurso(${c.id_curso}, 'manha', ${c.manha !== false})"
+                title="Alternar disponibilidade no Matutino"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                  c.manha !== false && c.ativo
+                    ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' 
+                    : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
+                }"
+              >
+                <i class="fa-regular fa-sun text-[9px]"></i> Manhã
+              </button>
+
+              <button 
+                onclick="alternarTurnoCurso(${c.id_curso}, 'tarde', ${c.tarde !== false})"
+                title="Alternar disponibilidade no Vespertino"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                  c.tarde !== false && c.ativo
+                    ? 'bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200' 
+                    : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
+                }"
+              >
+                <i class="fa-solid fa-cloud-sun text-[9px]"></i> Tarde
+              </button>
+
+              <button 
+                onclick="alternarTurnoCurso(${c.id_curso}, 'noite', ${c.noite !== false})"
+                title="Alternar disponibilidade no Noturno"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                  c.noite !== false && c.ativo
+                    ? 'bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200' 
+                    : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
+                }"
+              >
+                <i class="fa-solid fa-moon text-[9px]"></i> Noite
+              </button>
+
+              <button 
+                onclick="alternarStatusCurso(${c.id_curso}, ${c.ativo})"
+                class="ml-1 sm:ml-2 px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition ${
+                  c.ativo 
+                    ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100' 
+                    : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                }"
+              >
+                ${c.ativo ? 'Inativar' : 'Ativar'}
+              </button>
+            </div>
           `;
           listaEl.appendChild(div);
         });
       } catch (e) {
         listaEl.innerHTML = '<p class="text-center py-4 text-xs text-rose-500">Erro ao listar cursos.</p>';
+      }
+    }
+
+    async function alternarTurnoCurso(idCurso, turno, valorAtual) {
+      try {
+        const updateData = {};
+        updateData[turno] = !valorAtual;
+
+        const { error } = await db
+          .from('cursos')
+          .update(updateData)
+          .eq('id_curso', idCurso);
+
+        if (error) throw error;
+        await listarCursosModal();
+      } catch (e) {
+        alert('Erro ao alterar turno.');
       }
     }
 
@@ -536,7 +590,13 @@
       try {
         const { error } = await db
           .from('cursos')
-          .insert([{ nome_curso: nome, ativo: true }]);
+          .insert([{ 
+            nome_curso: nome, 
+            ativo: true, 
+            manha: true, 
+            tarde: true, 
+            noite: true 
+          }]);
 
         if (error) throw error;
 
@@ -559,7 +619,7 @@
       modal.classList.add('flex');
 
       if (!qrcodeInstancia) {
-        const urlApp = window.location.origin + window.location.pathname.replace('painel-gestao.html', 'index.html');
+        const urlApp = window.location.origin + window.location.pathname.replace('painel-gestao.html', 'inscricao.html');
         qrcodeInstancia = new QRCode(area, {
           text: urlApp,
           width: 180,
@@ -600,7 +660,7 @@
       link.click();
     }
 
-    // --- Modal de Senha via RPC Seguro ---
+    // --- Modal de Senha via RPC ---
     function abrirModalSenha() {
       document.getElementById('senhaAtualInput').value = '';
       document.getElementById('senhaNovaInput').value = '';
