@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <!-- Barra de Filtros -->
+    <!-- Barra de Filtros com Núcleo -->
     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
         <div class="relative flex-1 min-w-[180px]">
@@ -300,6 +300,7 @@
       const select = document.getElementById('filtroCurso');
       if (!select) return;
 
+      const valorAnterior = select.value;
       const nucleoSel = elNucleo ? elNucleo.value : '';
       select.innerHTML = '<option value="">Todos os Cursos</option>';
 
@@ -313,6 +314,11 @@
           select.appendChild(opt);
         }
       });
+
+      // Preserva o curso selecionado caso ainda pertença ao núcleo escolhido
+      if (valorAnterior && Array.from(select.options).some(o => o.value === valorAnterior)) {
+        select.value = valorAnterior;
+      }
     }
 
     async function carregarDadosFila() {
@@ -329,8 +335,10 @@
 
         if (error) throw error;
         registrosGlobais = data || [];
-        renderizarTabela(registrosGlobais);
+        
         atualizarCards(registrosGlobais);
+        // Aplica os filtros ativos (núcleo, curso, status e busca) sem resetar a tela
+        filtrarTabela();
       } catch (err) {
         console.error('Falha ao carregar fila:', err);
         corpo.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-rose-500">Erro ao carregar os dados.</td></tr>';
@@ -454,6 +462,14 @@
 
         if (error) throw error;
 
+        // Atualiza na memória local
+        const item = registrosGlobais.find(r => r.id === id);
+        if (item) item.status = 'Convocado';
+
+        // Atualiza contadores e mantém os filtros vigentes sem reiniciar a tela
+        atualizarCards(registrosGlobais);
+        filtrarTabela();
+
         const msg = 
           `*CEMART - CENTRO MUNICIPAL DE ARTES*\n` +
           `*CONVOCAÇÃO DE VAGA*\n\n` +
@@ -465,7 +481,6 @@
           `Atenciosamente,\n*Secretaria CEMART*`;
 
         window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`, '_blank');
-        await carregarDadosFila();
       } catch (err) {
         alert('Erro ao atualizar convocação.');
       }
@@ -515,17 +530,23 @@
           .eq('id', id);
 
         if (error) throw error;
+
+        // Atualiza status no array da memória
         const item = registrosGlobais.find(r => r.id === id);
         if (item) item.status = novoStatus;
+
+        // Atualiza contadores numéricos
         atualizarCards(registrosGlobais);
-        renderizarTabela(registrosGlobais);
+
+        // Mantém a visualização com os filtros atuais preservados
+        filtrarTabela();
       } catch (err) {
         alert('Erro ao atualizar status.');
         carregarDadosFila();
       }
     }
 
-    // --- Modal Cursos Construído com DOM Seguro ---
+    // --- Modal Cursos com Construção Segura via DOM ---
     async function abrirModalCursos() {
       const modal = document.getElementById('modalCursos');
       if (!modal) return;
@@ -580,7 +601,6 @@
             const row = document.createElement('div');
             row.className = 'py-3 flex flex-col md:flex-row md:items-center justify-between gap-3';
 
-            // Coluna 1: Nome e Área
             const infoDiv = document.createElement('div');
             infoDiv.className = 'flex items-center gap-2 min-w-[220px]';
             infoDiv.innerHTML = `
@@ -591,7 +611,6 @@
               </div>
             `;
 
-            // Coluna 2: Idade Mínima e Máxima
             const idadeDiv = document.createElement('div');
             idadeDiv.className = 'flex items-center gap-1.5 text-[11px] bg-slate-50 px-2 py-1 rounded-xl border border-slate-200';
             idadeDiv.innerHTML = `<span class="text-slate-500 font-medium">Idade:</span>`;
@@ -626,7 +645,6 @@
             idadeDiv.appendChild(inputMax);
             idadeDiv.appendChild(labelAnos);
 
-            // Coluna 3: Ações (Turnos e Ativar/Inativar)
             const acoesDiv = document.createElement('div');
             acoesDiv.className = 'flex items-center gap-1.5 flex-wrap';
 
