@@ -62,6 +62,7 @@
               type="date" 
               id="data_nasc" 
               required 
+              onchange="verificarIdadeMinima()"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
             >
           </div>
@@ -72,7 +73,7 @@
             <input 
               type="text" 
               id="nome_responsavel" 
-              placeholder="Ex: Pai, Mãe ou Tutor Legal" 
+              placeholder="Ex: Mãe, Pai ou Responsável Legal" 
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-indigo-600 focus:outline-none"
             >
           </div>
@@ -107,22 +108,49 @@
           </div>
         </div>
 
-        <!-- Curso Escolhido -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Oficina / Curso de Interesse *</label>
-          <select 
-            id="curso" 
-            required 
-            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-          >
-            <option value="">Carregando cursos...</option>
-          </select>
+        <!-- SELEÇÃO EM CASCATA: NÚCLEO E CURSO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <!-- Núcleo -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">1. Núcleo Artístico *</label>
+            <select 
+              id="nucleo" 
+              required 
+              onchange="filtrarCursosPorNucleo()"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none font-medium"
+            >
+              <option value="">Selecione o Núcleo...</option>
+              <option value="Dança">🩰 Núcleo de Dança</option>
+              <option value="Artes">🎭 Núcleo de Artes</option>
+              <option value="Música">🎵 Núcleo de Música</option>
+            </select>
+          </div>
+
+          <!-- Curso / Oficina -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">2. Oficina / Curso *</label>
+            <select 
+              id="curso" 
+              required 
+              disabled 
+              onchange="atualizarPeriodosDisponiveis()"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">Selecione primeiro o Núcleo...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Alerta de Idade Mínima -->
+        <div id="avisoIdade" class="hidden p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
+          <i class="fa-solid fa-circle-exclamation text-amber-600 mt-0.5"></i>
+          <span id="textoAvisoIdade"></span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Período (Dinâmico por curso) -->
+          <!-- Período (Dinâmico) -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Período de Preferência *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">3. Período de Preferência *</label>
             <select 
               id="periodo" 
               required 
@@ -186,13 +214,12 @@
   </footer>
 
   <script>
-    let cursosCarregados = [];
+    let todosCursos = [];
 
     document.addEventListener('DOMContentLoaded', () => {
-      carregarCursosDisponiveis();
+      carregarCatalogoCursos();
     });
 
-    // Máscara dinâmica de digitação para telefone
     function aplicarMascaraTelefone(input) {
       let v = input.value.replace(/\D/g, '');
       if (v.length > 11) v = v.substring(0, 11);
@@ -210,34 +237,69 @@
       input.value = v;
     }
 
-    async function carregarCursosDisponiveis() {
-      const selectCurso = document.getElementById('curso');
+    async function carregarCatalogoCursos() {
       try {
         const { data, error } = await db
           .from('cursos')
-          .select('id_curso, nome_curso, manha, tarde, noite')
+          .select('id_curso, nome_curso, nucleo, area, idade_minima, manha, tarde, noite')
           .eq('ativo', true)
+          .order('area', { ascending: true })
           .order('nome_curso', { ascending: true });
 
         if (error) throw error;
-        cursosCarregados = data || [];
-
-        selectCurso.innerHTML = '<option value="">Selecione um curso...</option>';
-        cursosCarregados.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.nome_curso;
-          opt.textContent = c.nome_curso;
-          selectCurso.appendChild(opt);
-        });
+        todosCursos = data || [];
       } catch (err) {
-        selectCurso.innerHTML = '<option value="">Erro ao carregar cursos</option>';
+        console.error('Erro ao carregar catálogo de cursos:', err);
       }
     }
 
-    // Carrega dinamicamente os turnos de acordo com as flags manha/tarde/noite do curso
-    document.getElementById('curso').addEventListener('change', function () {
+    // Cascata 1: Filtra Cursos quando o Núcleo muda
+    function filtrarCursosPorNucleo() {
+      const nucleoSelecionado = document.getElementById('nucleo').value;
+      const selectCurso = document.getElementById('curso');
       const selectPeriodo = document.getElementById('periodo');
-      const nomeCurso = this.value;
+
+      selectPeriodo.innerHTML = '<option value="">Selecione primeiro o curso...</option>';
+      selectPeriodo.disabled = true;
+      document.getElementById('avisoIdade').classList.add('hidden');
+
+      if (!nucleoSelecionado) {
+        selectCurso.innerHTML = '<option value="">Selecione primeiro o Núcleo...</option>';
+        selectCurso.disabled = true;
+        return;
+      }
+
+      const cursosDoNucleo = todosCursos.filter(c => c.nucleo === nucleoSelecionado);
+
+      // Agrupa por área dentro do núcleo (ex: Cordas, Sopros, Dança Clássica)
+      const porArea = {};
+      cursosDoNucleo.forEach(c => {
+        const areaNome = c.area || 'Geral';
+        if (!porArea[areaNome]) porArea[areaNome] = [];
+        porArea[areaNome].push(c);
+      });
+
+      selectCurso.innerHTML = '<option value="">Selecione uma oficina...</option>';
+      for (const [area, cursos] of Object.entries(porArea)) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = `── ${area} ──`;
+        cursos.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.nome_curso;
+          const infoIdade = c.idade_minima ? ` (a partir de ${c.idade_minima} anos)` : '';
+          opt.textContent = `${c.nome_curso}${infoIdade}`;
+          optgroup.appendChild(opt);
+        });
+        selectCurso.appendChild(optgroup);
+      }
+
+      selectCurso.disabled = false;
+    }
+
+    // Cascata 2: Atualiza turnos disponíveis quando o Curso muda
+    function atualizarPeriodosDisponiveis() {
+      const nomeCurso = document.getElementById('curso').value;
+      const selectPeriodo = document.getElementById('periodo');
 
       if (!nomeCurso) {
         selectPeriodo.innerHTML = '<option value="">Selecione primeiro o curso...</option>';
@@ -245,41 +307,74 @@
         return;
       }
 
-      const curso = cursosCarregados.find(c => c.nome_curso === nomeCurso);
-
+      const curso = todosCursos.find(c => c.nome_curso === nomeCurso);
       if (!curso) return;
 
+      verificarIdadeMinima();
+
       selectPeriodo.innerHTML = '<option value="">Selecione o período...</option>';
-      let qtdDisponivel = 0;
+      let count = 0;
 
       if (curso.manha !== false) {
         selectPeriodo.innerHTML += '<option value="Matutino">Manhã (Matutino)</option>';
-        qtdDisponivel++;
+        count++;
       }
       if (curso.tarde !== false) {
         selectPeriodo.innerHTML += '<option value="Vespertino">Tarde (Vespertino)</option>';
-        qtdDisponivel++;
+        count++;
       }
       if (curso.noite !== false) {
         selectPeriodo.innerHTML += '<option value="Noturno">Noite (Noturno)</option>';
-        qtdDisponivel++;
+        count++;
       }
 
-      if (qtdDisponivel === 0) {
+      if (count === 0) {
         selectPeriodo.innerHTML = '<option value="">Nenhum período disponível no momento</option>';
         selectPeriodo.disabled = true;
       } else {
         selectPeriodo.disabled = false;
       }
-    });
+    }
+
+    function verificarIdadeMinima() {
+      const dataNascVal = document.getElementById('data_nasc').value;
+      const nomeCurso = document.getElementById('curso').value;
+      const boxAviso = document.getElementById('avisoIdade');
+      const textoAviso = document.getElementById('textoAvisoIdade');
+
+      if (!dataNascVal || !nomeCurso) {
+        boxAviso.classList.add('hidden');
+        return;
+      }
+
+      const curso = todosCursos.find(c => c.nome_curso === nomeCurso);
+      if (!curso || !curso.idade_minima) {
+        boxAviso.classList.add('hidden');
+        return;
+      }
+
+      const nasc = new Date(dataNascVal);
+      const hoje = new Date();
+      let idade = hoje.getFullYear() - nasc.getFullYear();
+      const m = hoje.getMonth() - nasc.getMonth();
+      if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) {
+        idade--;
+      }
+
+      if (idade < curso.idade_minima) {
+        textoAviso.innerText = `Atenção: A oficina de ${curso.nome_curso} recomenda idade mínima de ${curso.idade_minima} anos (idade informada: ${idade} anos). A inscrição será aceita para análise pedagógica da diretoria.`;
+        boxAviso.classList.remove('hidden');
+      } else {
+        boxAviso.classList.add('hidden');
+      }
+    }
 
     async function realizarInscricao(e) {
       e.preventDefault();
       const btn = document.getElementById('btnEnviar');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gravando inscrição...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando inscrição...';
 
-      // Dados do formulário
       const nomeAluno = document.getElementById('nome_aluno').value.trim().toUpperCase();
       const dataNasc = document.getElementById('data_nasc').value;
       const nomeResponsavel = document.getElementById('nome_responsavel').value.trim().toUpperCase();
@@ -289,7 +384,6 @@
       const periodo = document.getElementById('periodo').value;
       const nivel = document.getElementById('nivel').value;
 
-      // Gera o protocolo único com o ano corrente
       const anoAtual = new Date().getFullYear();
       const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
       const protocolo = `CEM-${anoAtual}-${numeroAleatorio}`;
@@ -324,8 +418,11 @@
 
     function reiniciarFormulario() {
       document.getElementById('formInscricao').reset();
+      document.getElementById('curso').innerHTML = '<option value="">Selecione primeiro o Núcleo...</option>';
+      document.getElementById('curso').disabled = true;
       document.getElementById('periodo').innerHTML = '<option value="">Selecione primeiro o curso...</option>';
       document.getElementById('periodo').disabled = true;
+      document.getElementById('avisoIdade').classList.add('hidden');
       document.getElementById('sucessoBox').classList.add('hidden');
       document.getElementById('formInscricao').classList.remove('hidden');
     }
