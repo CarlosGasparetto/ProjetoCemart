@@ -74,6 +74,18 @@
 
       if (!termo) return;
 
+      // VALIDAÇÃO LGPD: Bloqueia buscas curtas e genéricas
+      if (termo.length < 6 && !termo.startsWith('CEM-')) {
+        resultadoDiv.classList.remove('hidden');
+        resultadoDiv.innerHTML = `
+          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center text-xs text-amber-800">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mb-1 block"></i>
+            Por motivo de privacidade, digite o <strong>Protocolo completo</strong> ou o <strong>Nome Completo</strong> do aluno (mínimo de 6 caracteres).
+          </div>
+        `;
+        return;
+      }
+
       resultadoDiv.classList.remove('hidden');
       resultadoDiv.innerHTML = `
         <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs text-center text-xs text-slate-400">
@@ -102,7 +114,6 @@
 
         resultadoDiv.innerHTML = '';
 
-        // Itera por todos os cursos em que o aluno se inscreveu
         for (const item of resultados) {
           let posicaoTexto = '—';
           if (item.status === 'Aguardando') {

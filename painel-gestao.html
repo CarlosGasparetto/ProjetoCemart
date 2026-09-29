@@ -263,6 +263,17 @@
     let registrosGlobais = [];
     let cursosBanco = [];
 
+    // Função para blindagem contra XSS (Cross-Site Scripting)
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       await carregarCursosFiltro();
       await carregarDadosFila();
@@ -315,7 +326,6 @@
         }
       });
 
-      // Preserva o curso selecionado caso ainda pertença ao núcleo escolhido
       if (valorAnterior && Array.from(select.options).some(o => o.value === valorAnterior)) {
         select.value = valorAnterior;
       }
@@ -337,7 +347,6 @@
         registrosGlobais = data || [];
         
         atualizarCards(registrosGlobais);
-        // Aplica os filtros ativos (núcleo, curso, status e busca) sem resetar a tela
         filtrarTabela();
       } catch (err) {
         console.error('Falha ao carregar fila:', err);
@@ -369,7 +378,10 @@
           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         }) : '-';
 
-        const nomeExibicao = reg.nome_aluno || 'Sem Nome';
+        // Prevenção XSS nas variáveis de exibição
+        const nomeReal = reg.nome_aluno || 'Sem Nome';
+        const nomeExibicao = escapeHTML(nomeReal);
+        
         const fonePrincipal = reg.fone1 ? reg.fone1.toString().replace(/\D/g, '') : '';
         const foneSecundario = reg.fone2 ? reg.fone2.toString().replace(/\D/g, '') : '';
         
@@ -380,8 +392,10 @@
 
         const telParaWhatsApp = fonePrincipal || foneSecundario;
 
-        const responsavelExibicao = reg.nome_responsavel && reg.nome_responsavel.trim() !== '' && reg.nome_responsavel !== 'EMPTY' 
-          ? ` • <span class="text-slate-500 font-medium">Resp: ${reg.nome_responsavel}</span>` 
+        const responsavelReal = reg.nome_responsavel || '';
+        const responsavelLimpo = escapeHTML(responsavelReal);
+        const responsavelExibicao = responsavelLimpo && responsavelLimpo.trim() !== '' && responsavelLimpo !== 'EMPTY' 
+          ? ` • <span class="text-slate-500 font-medium">Resp: ${responsavelLimpo}</span>` 
           : '';
 
         const nivelBadge = reg.nivel ? ` • Nível: <span class="font-medium text-slate-600">${reg.nivel}</span>` : '';
@@ -401,7 +415,7 @@
         if (reg.status === 'Aguardando' && telParaWhatsApp) {
           btnConvocar = `
             <button 
-              onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(nomeExibicao)}', '${telParaWhatsApp}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}', '${encodeURIComponent(reg.protocolo || '')}')" 
+              onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(nomeReal)}', '${telParaWhatsApp}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}', '${encodeURIComponent(reg.protocolo || '')}')" 
               class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
               title="Convocar via WhatsApp oficial"
             >
@@ -415,15 +429,15 @@
           <td class="px-4 py-3">
             <p class="font-bold text-slate-800">${nomeExibicao}${responsavelExibicao}</p>
             <p class="text-[11px] text-slate-500 mt-0.5">
-              <i class="fa-solid fa-phone text-[10px] text-slate-400 mr-1"></i>${textoContatos} • Prot: <span class="font-mono font-bold text-indigo-600">${reg.protocolo || '-'}</span>
+              <i class="fa-solid fa-phone text-[10px] text-slate-400 mr-1"></i>${textoContatos} • Prot: <span class="font-mono font-bold text-indigo-600">${escapeHTML(reg.protocolo) || '-'}</span>
             </p>
           </td>
           <td class="px-4 py-3">
             <div class="flex items-center">
               ${nucleoTag}
-              <span class="font-bold text-slate-700">${reg.curso || '-'}</span>
+              <span class="font-bold text-slate-700">${escapeHTML(reg.curso) || '-'}</span>
             </div>
-            <p class="text-[11px] text-slate-400">${reg.periodo || 'Não informado'}${nivelBadge}</p>
+            <p class="text-[11px] text-slate-400">${escapeHTML(reg.periodo) || 'Não informado'}${nivelBadge}</p>
           </td>
           <td class="px-4 py-3 text-[11px] text-slate-500">${dataFormatada}</td>
           <td class="px-4 py-3">
@@ -462,11 +476,9 @@
 
         if (error) throw error;
 
-        // Atualiza na memória local
         const item = registrosGlobais.find(r => r.id === id);
         if (item) item.status = 'Convocado';
 
-        // Atualiza contadores e mantém os filtros vigentes sem reiniciar a tela
         atualizarCards(registrosGlobais);
         filtrarTabela();
 
@@ -531,14 +543,10 @@
 
         if (error) throw error;
 
-        // Atualiza status no array da memória
         const item = registrosGlobais.find(r => r.id === id);
         if (item) item.status = novoStatus;
 
-        // Atualiza contadores numéricos
         atualizarCards(registrosGlobais);
-
-        // Mantém a visualização com os filtros atuais preservados
         filtrarTabela();
       } catch (err) {
         alert('Erro ao atualizar status.');
@@ -546,7 +554,7 @@
       }
     }
 
-    // --- Modal Cursos com Construção Segura via DOM ---
+    // --- Modal Cursos com Construção Segura via DOM e Preservação de Scroll ---
     async function abrirModalCursos() {
       const modal = document.getElementById('modalCursos');
       if (!modal) return;
@@ -566,6 +574,10 @@
     async function listarCursosModal() {
       const listaEl = document.getElementById('listaCursosModal');
       if (!listaEl) return;
+      
+      // Salva a posição exata da rolagem antes de recarregar a lista
+      const scrollPosicao = listaEl.scrollTop;
+      
       listaEl.innerHTML = '<p class="text-center py-4 text-xs text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Carregando cursos...</p>';
 
       try {
@@ -606,8 +618,8 @@
             infoDiv.innerHTML = `
               <span class="w-2.5 h-2.5 rounded-full shrink-0 ${c.ativo ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
               <div>
-                <span class="text-xs font-semibold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${c.nome_curso}</span>
-                <p class="text-[10px] text-slate-400">${c.area || 'Geral'}</p>
+                <span class="text-xs font-semibold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${escapeHTML(c.nome_curso)}</span>
+                <p class="text-[10px] text-slate-400">${escapeHTML(c.area) || 'Geral'}</p>
               </div>
             `;
 
@@ -682,6 +694,11 @@
           containerNucleo.appendChild(divFilhos);
           listaEl.appendChild(containerNucleo);
         }
+
+        // Devolve o scroll exato para a mesma posição após reconstruir a lista
+        setTimeout(() => {
+          listaEl.scrollTop = scrollPosicao;
+        }, 10);
 
       } catch (e) {
         console.error('Erro em listarCursosModal:', e);
