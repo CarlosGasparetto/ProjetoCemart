@@ -25,9 +25,11 @@
   <!-- Topo Administrativo -->
   <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-20">
     <div class="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      
       <div class="flex items-center space-x-3">
-        <div class="bg-indigo-700 p-2 rounded-xl text-amber-400">
-          <i class="fa-solid fa-chalkboard-user text-xl"></i>
+        <!-- Caixa branca arredondada com o novo logo -->
+        <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
+          <img src="logo-cemart.png" alt="Logo CEMART" class="h-8 sm:h-10 w-auto object-contain">
         </div>
         <div>
           <h1 class="font-bold text-base sm:text-lg leading-tight">CEMART - Painel da Secretaria</h1>
@@ -263,7 +265,7 @@
     let registrosGlobais = [];
     let cursosBanco = [];
 
-    // Função para blindagem contra XSS (Cross-Site Scripting)
+    // Função de Prevenção XSS
     function escapeHTML(str) {
       if (!str) return '';
       return str.toString()
@@ -347,6 +349,7 @@
         registrosGlobais = data || [];
         
         atualizarCards(registrosGlobais);
+        // Aplica os filtros ativos (núcleo, curso, status e busca) sem resetar a tela
         filtrarTabela();
       } catch (err) {
         console.error('Falha ao carregar fila:', err);
@@ -378,7 +381,7 @@
           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         }) : '-';
 
-        // Prevenção XSS nas variáveis de exibição
+        // XSS Protection Aplicada nas variáveis de exibição
         const nomeReal = reg.nome_aluno || 'Sem Nome';
         const nomeExibicao = escapeHTML(nomeReal);
         
@@ -398,10 +401,10 @@
           ? ` • <span class="text-slate-500 font-medium">Resp: ${responsavelLimpo}</span>` 
           : '';
 
-        const nivelBadge = reg.nivel ? ` • Nível: <span class="font-medium text-slate-600">${reg.nivel}</span>` : '';
+        const nivelBadge = reg.nivel ? ` • Nível: <span class="font-medium text-slate-600">${escapeHTML(reg.nivel)}</span>` : '';
 
         const cursoInfo = cursosBanco.find(c => c.nome_curso === reg.curso);
-        const nucleoTag = cursoInfo && cursoInfo.nucleo ? `<span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mr-1">${cursoInfo.nucleo}</span>` : '';
+        const nucleoTag = cursoInfo && cursoInfo.nucleo ? `<span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mr-1">${escapeHTML(cursoInfo.nucleo)}</span>` : '';
 
         let statusClass = 'bg-amber-100 text-amber-800 border-amber-200';
         if (reg.status === 'Convocado') statusClass = 'bg-blue-100 text-blue-800 border-blue-200';
@@ -441,7 +444,7 @@
           </td>
           <td class="px-4 py-3 text-[11px] text-slate-500">${dataFormatada}</td>
           <td class="px-4 py-3">
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusClass}">${reg.status}</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusClass}">${escapeHTML(reg.status)}</span>
           </td>
           <td class="px-4 py-3 text-right">
             <div class="inline-flex items-center gap-1.5">
@@ -476,9 +479,11 @@
 
         if (error) throw error;
 
+        // Atualiza na memória local
         const item = registrosGlobais.find(r => r.id === id);
         if (item) item.status = 'Convocado';
 
+        // Atualiza contadores e mantém os filtros vigentes sem reiniciar a tela
         atualizarCards(registrosGlobais);
         filtrarTabela();
 
@@ -543,10 +548,14 @@
 
         if (error) throw error;
 
+        // Atualiza status no array da memória
         const item = registrosGlobais.find(r => r.id === id);
         if (item) item.status = novoStatus;
 
+        // Atualiza contadores numéricos
         atualizarCards(registrosGlobais);
+
+        // Mantém a visualização com os filtros atuais preservados
         filtrarTabela();
       } catch (err) {
         alert('Erro ao atualizar status.');
@@ -602,7 +611,7 @@
           containerNucleo.className = 'pt-2';
           containerNucleo.innerHTML = `
             <div class="bg-indigo-50/80 px-3 py-1.5 rounded-xl font-bold text-xs text-indigo-900 mb-2 flex items-center gap-1.5">
-              <i class="fa-solid fa-folder-open text-indigo-600 text-[11px]"></i> Núcleo de ${nucleo}
+              <i class="fa-solid fa-folder-open text-indigo-600 text-[11px]"></i> Núcleo de ${escapeHTML(nucleo)}
             </div>
           `;
           
@@ -837,7 +846,7 @@
         const tel1 = formatarTelefoneExibicao(r.fone1 || '');
         const tel2 = formatarTelefoneExibicao(r.fone2 || '');
         const data = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '';
-        csv += `"${r.protocolo || ''}";"${nome}";"${resp}";"${tel1}";"${tel2}";"${r.curso || ''}";"${r.periodo || ''}";"${r.nivel || ''}";"${r.status || ''}";"${data}"\n`;
+        csv += `"${escapeHTML(r.protocolo) || ''}";"${escapeHTML(nome)}";"${escapeHTML(resp)}";"${tel1}";"${tel2}";"${escapeHTML(r.curso) || ''}";"${escapeHTML(r.periodo) || ''}";"${escapeHTML(r.nivel) || ''}";"${escapeHTML(r.status) || ''}";"${data}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

@@ -16,15 +16,18 @@
   <!-- Topo -->
   <header class="bg-indigo-900 text-white shadow-md">
     <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      
       <div class="flex items-center space-x-3">
-        <div class="bg-indigo-700 p-2 rounded-xl text-amber-400">
-          <i class="fa-solid fa-palette text-xl"></i>
+        <!-- Caixa branca arredondada com o novo logo -->
+        <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
+          <img src="logo-cemart.png" alt="Logo CEMART" class="h-8 sm:h-10 w-auto object-contain">
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight">CEMART</h1>
           <p class="text-xs text-indigo-200">Inscrição na Fila de Espera</p>
         </div>
       </div>
+      
       <a href="index.html" class="text-xs text-indigo-200 hover:text-white flex items-center gap-1 transition">
         <i class="fa-solid fa-arrow-left"></i> Voltar
       </a>
@@ -241,7 +244,7 @@
       try {
         const { data, error } = await db
           .from('cursos')
-          .select('id_curso, nome_curso, nucleo, area, idade_minima, manha, tarde, noite')
+          .select('id_curso, nome_curso, nucleo, area, idade_minima, idade_maxima, manha, tarde, noite')
           .eq('ativo', true)
           .order('area', { ascending: true })
           .order('nome_curso', { ascending: true });
@@ -286,7 +289,11 @@
         cursos.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.nome_curso;
-          const infoIdade = c.idade_minima ? ` (a partir de ${c.idade_minima} anos)` : '';
+          let infoIdade = '';
+          if (c.idade_minima && !c.idade_maxima) infoIdade = ` (a partir de ${c.idade_minima} anos)`;
+          if (c.idade_minima && c.idade_maxima) infoIdade = ` (${c.idade_minima} a ${c.idade_maxima} anos)`;
+          if (!c.idade_minima && c.idade_maxima) infoIdade = ` (até ${c.idade_maxima} anos)`;
+          
           opt.textContent = `${c.nome_curso}${infoIdade}`;
           optgroup.appendChild(opt);
         });
@@ -348,7 +355,7 @@
       }
 
       const curso = todosCursos.find(c => c.nome_curso === nomeCurso);
-      if (!curso || !curso.idade_minima) {
+      if (!curso) {
         boxAviso.classList.add('hidden');
         return;
       }
@@ -361,8 +368,15 @@
         idade--;
       }
 
-      if (idade < curso.idade_minima) {
-        textoAviso.innerText = `Atenção: A oficina de ${curso.nome_curso} recomenda idade mínima de ${curso.idade_minima} anos (idade informada: ${idade} anos). A inscrição será aceita para análise pedagógica da diretoria.`;
+      let mensagem = '';
+      if (curso.idade_minima && idade < curso.idade_minima) {
+        mensagem = `Atenção: A oficina de ${curso.nome_curso} recomenda idade mínima de ${curso.idade_minima} anos (idade informada: ${idade} anos). Sua inscrição será registrada para análise pedagógica.`;
+      } else if (curso.idade_maxima && idade > curso.idade_maxima) {
+        mensagem = `Atenção: A oficina de ${curso.nome_curso} é voltada para a faixa etária até ${curso.idade_maxima} anos (idade informada: ${idade} anos). Sua inscrição será registrada para análise pedagógica.`;
+      }
+
+      if (mensagem) {
+        textoAviso.innerText = mensagem;
         boxAviso.classList.remove('hidden');
       } else {
         boxAviso.classList.add('hidden');

@@ -25,15 +25,16 @@
   <header class="bg-indigo-900 text-white shadow-md">
     <div class="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="bg-indigo-700 p-2.5 rounded-xl text-amber-400">
-          <i class="fa-solid fa-palette text-2xl"></i>
+        <!-- Caixa branca arredondada com o novo logo -->
+        <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
+          <img src="logo-cemart.png" alt="Logo CEMART" class="h-10 w-auto object-contain">
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight">CEMART</h1>
           <p class="text-xs text-indigo-200">Centro Municipal de Artes de Barretos</p>
         </div>
       </div>
-      <span class="text-xs px-3 py-1 bg-indigo-800 rounded-full border border-indigo-700">Sistema de Vagas</span>
+      <span class="text-xs px-3 py-1 bg-indigo-800 rounded-full border border-indigo-700 hidden sm:block">Sistema de Vagas</span>
     </div>
   </header>
 
@@ -150,7 +151,6 @@
   </div>
 
   <script>
-    // --- Lógica Nativa de Instalação PWA ---
     let deferredPrompt = null;
     const bannerInstalacao = document.getElementById('bannerInstalacao');
 
@@ -176,7 +176,6 @@
       deferredPrompt = null;
     });
 
-    // --- Lógica de Acesso da Secretaria via RPC Seguro ---
     function abrirModalLogin() {
       if (sessionStorage.getItem('autenticado_cemart') === 'true') {
         window.location.href = 'painel-gestao.html';
@@ -205,7 +204,6 @@
       erroEl.classList.add('hidden');
 
       try {
-        // Chamada direta à função RPC do PostgreSQL (impede leitura da tabela config_sistema)
         const { data: senhaValida, error } = await db.rpc('verificar_senha_gestao', {
           senha_digitada: senhaDigitada
         });
