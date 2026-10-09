@@ -27,7 +27,7 @@
     <div class="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
       
       <div class="flex items-center space-x-3">
-        <!-- Caixa branca arredondada com o novo logo -->
+        <!-- Caixa branca arredondada com o logo -->
         <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
           <img src="logo-cemart.png" alt="Logo CEMART" class="h-8 sm:h-10 w-auto object-contain">
         </div>
@@ -455,6 +455,15 @@
                 <option value="Matriculado" ${reg.status === 'Matriculado' ? 'selected' : ''}>Matriculado</option>
                 <option value="Desistente" ${reg.status === 'Desistente' ? 'selected' : ''}>Desistente</option>
               </select>
+              
+              <!-- NOVO BOTÃO DE EXCLUSÃO DE CANDIDATO -->
+              <button 
+                onclick="excluirCandidato(${reg.id}, '${encodeURIComponent(nomeReal)}')" 
+                class="px-2 py-1 bg-white border border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 rounded-lg transition cursor-pointer"
+                title="Excluir candidato permanentemente"
+              >
+                <i class="fa-solid fa-trash-can text-[11px]"></i>
+              </button>
             </div>
           </td>
         `;
@@ -500,6 +509,36 @@
         window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`, '_blank');
       } catch (err) {
         alert('Erro ao atualizar convocação.');
+      }
+    }
+
+    // NOVA FUNÇÃO: Excluir Candidato
+    async function excluirCandidato(id, nomeCod) {
+      const nome = decodeURIComponent(nomeCod);
+      
+      const confirmacao = confirm(`ATENÇÃO: Tem certeza que deseja EXCLUIR permanentemente o candidato(a) ${nome}?\n\nEsta ação removerá o registro do banco de dados e não poderá ser desfeita.`);
+      
+      if (!confirmacao) return;
+
+      try {
+        const { error } = await db
+          .from('fila_cemart')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        // Remove o registro do array local na memória
+        registrosGlobais = registrosGlobais.filter(r => r.id !== id);
+
+        // Atualiza os contadores no topo da tela
+        atualizarCards(registrosGlobais);
+
+        // Atualiza a tabela preservando os filtros ativos
+        filtrarTabela();
+      } catch (err) {
+        alert('Erro ao excluir o registro. Verifique a conexão com o banco de dados.');
+        console.error(err);
       }
     }
 
