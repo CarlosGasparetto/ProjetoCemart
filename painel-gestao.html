@@ -241,7 +241,6 @@
           return;
         }
 
-        // 1. Armazena o e-mail de quem está logado para usar na auditoria
         emailUsuarioLogado = sessionRes.data.session.user.email;
 
         await carregarCursosFiltro();
@@ -357,10 +356,10 @@
         const telParaWhatsApp = fonePrincipal || foneSecundario;
         let btnConvocar = '';
         if (reg.status === 'Aguardando' && telParaWhatsApp) {
-          btnConvocar = `<button onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(reg.nome_aluno || '')}', '${telParaWhatsApp}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"><i class="fa-brands fa-whatsapp text-xs"></i> Convocar</button>`;
+          btnConvocar = `<button onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(reg.nome_aluno \vert{}\vert{} '')}', '${telParaWhatsApp}', '${encodeURIComponent(reg.curso \vert{}\vert{} '')}', '${encodeURIComponent(reg.periodo || '')}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"><i class="fa-brands fa-whatsapp text-xs"></i> Convocar</button>`;
         }
 
-        // 2. AUDITORIA: Verifica se há dados e se o usuário logado é dono
+        // AUDITORIA: Verifica se há dados e se o usuário logado é dono
         let infoAuditoria = '';
         if (reg.atualizado_por && emailsDaDiretoria.includes(emailUsuarioLogado)) {
           infoAuditoria = `<p class="text-[9px] text-slate-400 mt-1.5 pt-1 border-t border-slate-200/50" title="Última alteração"><i class="fa-solid fa-user-pen mr-0.5"></i> ${escapeHTML(reg.atualizado_por)}</p>`;
@@ -372,7 +371,17 @@
           <td class="px-4 py-3 font-bold text-center text-indigo-700">${posicaoTexto}</td>
           <td class="px-4 py-3">
             <p class="font-bold text-slate-800">${escapeHTML(reg.nome_aluno)}</p>
-            <p class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-phone text-[10px] text-slate-400 mr-1"></i>${textoContatos}</p>
+            
+            <!-- INCLUSÃO DO PROTOCOLO E TELEFONE JUNTOS -->
+            <div class="flex flex-wrap items-center gap-2 mt-1">
+              <span class="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100" title="Protocolo de Inscrição">
+                ${escapeHTML(reg.protocolo)}
+              </span>
+              <p class="text-[10px] text-slate-500">
+                <i class="fa-solid fa-phone text-[9px] text-slate-400 mr-1"></i>${textoContatos}
+              </p>
+            </div>
+            
           </td>
           <td class="px-4 py-3">
             <div class="flex items-center">${nucleoTag}<span class="font-bold text-slate-700">${escapeHTML(reg.curso) || '-'}</span></div>
@@ -380,8 +389,7 @@
           </td>
           <td class="px-4 py-3 text-[11px] text-slate-500">${dataFormatada}</td>
           <td class="px-4 py-3">
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusClass}">${escapeHTML(reg.status)}</span>
-            ${infoAuditoria} <!-- Exibe apenas para a diretoria -->
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusClass}">${escapeHTML(reg.status)}</span>${infoAuditoria}
           </td>
           <td class="px-4 py-3 text-right">
             <div class="inline-flex items-center gap-1.5">
@@ -404,7 +412,6 @@
       try { 
         const { error } = await db.from('fila_cemart').update({ status: novoStatus }).eq('id', id); 
         if (error) throw error;
-        // Recarrega os dados do banco para trazer o atualizado_por recém gerado pelo Trigger
         await carregarDadosFila();
       } catch (err) { alert('Erro ao atualizar status.'); } 
     }
@@ -467,106 +474,4 @@
         listaEl.innerHTML = '';
         for (const [nucleo, lista] of Object.entries(grupos)) {
           const container = document.createElement('div'); container.className = 'pt-2'; 
-          container.innerHTML = `<div class="bg-indigo-50/80 px-3 py-1.5 rounded-xl font-bold text-xs text-indigo-900 mb-2">Núcleo de ${escapeHTML(nucleo)}</div>`;
-          const divFilhos = document.createElement('div'); divFilhos.className = 'divide-y divide-slate-100 pl-1';
-          
-          lista.forEach(c => {
-            const row = document.createElement('div'); row.className = 'py-3 flex flex-col md:flex-row md:items-center justify-between gap-3';
-            row.innerHTML = `
-              <div class="flex items-center gap-2 min-w-[180px]">
-                <span class="w-2.5 h-2.5 rounded-full ${c.ativo ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
-                <div>
-                  <span class="text-xs font-semibold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${escapeHTML(c.nome_curso)}</span>
-                  <p class="text-[10px] text-slate-400">${escapeHTML(c.area) || 'Geral'}</p>
-                </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <div class="flex items-center gap-1.5 text-[11px] bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
-                  <span class="text-slate-500">Idade:</span>
-                  <input type="number" min="0" value="${c.idade_minima || 0}" onchange="atualizarCampoCurso(${c.id_curso}, 'idade_minima', this.value)" class="w-9 px-1 py-0.5 bg-white border border-slate-300 rounded text-center text-xs font-bold text-slate-700">
-                  <span class="text-slate-400">a</span>
-                  <input type="number" min="0" value="${c.idade_maxima || ''}" onchange="atualizarCampoCurso(${c.id_curso}, 'idade_maxima', this.value)" class="w-9 px-1 py-0.5 bg-white border border-slate-300 rounded text-center text-xs font-bold text-slate-700">
-                </div>
-                <div class="flex items-center gap-1.5 text-[11px] bg-amber-50 px-2 py-1 rounded-xl border border-amber-200">
-                  <span class="text-amber-700">Limite:</span>
-                  <input type="number" min="0" value="${c.limite_fila || 0}" onchange="atualizarCampoCurso(${c.id_curso}, 'limite_fila', this.value)" class="w-12 px-1 py-0.5 bg-white border border-amber-300 rounded text-center text-xs font-bold text-amber-900">
-                </div>
-              </div>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <button onclick="alternarTurnoCurso(${c.id_curso}, 'manha', ${c.manha !== false})" class="px-2 py-0.5 rounded text-[10px] font-bold border ${c.manha !== false && c.ativo ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">Manhã</button>
-                <button onclick="alternarTurnoCurso(${c.id_curso}, 'tarde', ${c.tarde !== false})" class="px-2 py-0.5 rounded text-[10px] font-bold border ${c.tarde !== false && c.ativo ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">Tarde</button>
-                <button onclick="alternarTurnoCurso(${c.id_curso}, 'noite', ${c.noite !== false})" class="px-2 py-0.5 rounded text-[10px] font-bold border ${c.noite !== false && c.ativo ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">Noite</button>
-                <button onclick="alternarStatusCurso(${c.id_curso}, ${c.ativo})" class="ml-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${c.ativo ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}">${c.ativo ? 'Inativar' : 'Ativar'}</button>
-              </div>
-            `;
-            divFilhos.appendChild(row);
-          });
-          container.appendChild(divFilhos); listaEl.appendChild(container);
-        }
-        setTimeout(() => { listaEl.scrollTop = scrollPos; }, 10);
-      } catch (e) { listaEl.innerHTML = '<p class="text-center text-rose-500">Erro ao carregar cursos.</p>'; }
-    }
-
-    async function atualizarCampoCurso(idCurso, campo, valor) { try { const updateData = {}; updateData[campo] = valor === '' ? null : parseInt(valor, 10); await db.from('cursos').update(updateData).eq('id_curso', idCurso); } catch (e) { alert('Erro ao atualizar campo.'); } }
-    async function alternarTurnoCurso(idCurso, turno, valorAtual) { try { const updateData = {}; updateData[turno] = !valorAtual; await db.from('cursos').update(updateData).eq('id_curso', idCurso); await listarCursosModal(); } catch (e) {} }
-    async function alternarStatusCurso(idCurso, statusAtual) { try { await db.from('cursos').update({ ativo: !statusAtual }).eq('id_curso', idCurso); await listarCursosModal(); } catch (e) {} }
-    
-    async function adicionarCurso(e) {
-      e.preventDefault(); 
-      const nome = document.getElementById('novoCursoInput').value.trim(); 
-      if (!nome) return; 
-      document.getElementById('btnAdicionarCurso').disabled = true;
-      try { 
-        const { error } = await db.from('cursos').insert([{ 
-          nome_curso: nome, nucleo: document.getElementById('novoCursoNucleo').value, area: document.getElementById('novoCursoArea').value.trim() || 'Geral', 
-          idade_minima: document.getElementById('novoCursoIdadeMin').value ? parseInt(document.getElementById('novoCursoIdadeMin').value) : 0, 
-          idade_maxima: document.getElementById('novoCursoIdadeMax').value ? parseInt(document.getElementById('novoCursoIdadeMax').value) : null, 
-          limite_fila: document.getElementById('novoCursoLimite').value ? parseInt(document.getElementById('novoCursoLimite').value) : 0, 
-          ativo: true, manha: true, tarde: true, noite: true 
-        }]); 
-        if (error) throw error;
-        e.target.reset(); await listarCursosModal(); 
-      } catch (err) { alert('Erro ao cadastrar curso.'); } 
-      finally { document.getElementById('btnAdicionarCurso').disabled = false; }
-    }
-
-    /* --- UTILIDADES, QR CODE, EXPORTAR --- */
-    let qrcodeInstancia = null;
-    function abrirModalQRCode() { document.getElementById('modalQRCode').classList.remove('hidden'); document.getElementById('modalQRCode').classList.add('flex'); if (!qrcodeInstancia) { qrcodeInstancia = new QRCode(document.getElementById('areaQRCode'), { text: window.location.origin + window.location.pathname.replace('painel-gestao.html', 'inscricao.html'), width: 180, height: 180, colorDark: "#1e1b4b", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H }); } }
-    function fecharModalQRCode() { document.getElementById('modalQRCode').classList.add('hidden'); document.getElementById('modalQRCode').classList.remove('flex'); }
-    
-    function exportarCSV() { 
-      if (registrosGlobais.length === 0) return alert('Sem registros.'); 
-      let csv = '\uFEFFProtocolo;Aluno;Telefone 1;Telefone 2;Curso;Período;Status;Data Inscrição\n'; 
-      registrosGlobais.forEach(r => { csv += `"${escapeHTML(r.protocolo)}";"${escapeHTML(r.nome_aluno)}";"${formatarTelefoneExibicao(r.fone1)}";"${formatarTelefoneExibicao(r.fone2)}";"${escapeHTML(r.curso)}";"${escapeHTML(r.periodo)}";"${escapeHTML(r.status)}";"${r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : ''}"\n`; }); 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `fila_cemart.csv`; link.click(); 
-    }
-    
-    function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); document.getElementById('modalSenha').classList.add('flex'); }
-    function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); document.getElementById('modalSenha').classList.remove('flex'); }
-    
-    async function processarTrocaSenha(e) { 
-      e.preventDefault(); const btn = document.getElementById('btnSalvarSenha'); btn.disabled = true; btn.innerText = 'A salvar...';
-      const senhaAtual = document.getElementById('senhaAtualInput').value; const novaSenha = document.getElementById('senhaNovaInput').value;
-      try {
-        const { data: { user }, error: userError } = await db.auth.getUser();
-        if (userError || !user) throw new Error('Utilizador não identificado.');
-        
-        const { error: signInError } = await db.auth.signInWithPassword({ email: user.email, password: senhaAtual });
-        if (signInError) throw new Error('A palavra-passe atual está incorreta.');
-        
-        const { error } = await db.auth.updateUser({ password: novaSenha });
-        if (error) throw error;
-        
-        alert('Palavra-passe atualizada com sucesso!'); fecharModalSenha(); document.getElementById('senhaAtualInput').value = ''; document.getElementById('senhaNovaInput').value = '';
-      } catch (err) { alert(err.message || 'Erro ao atualizar a palavra-passe.'); } finally { btn.disabled = false; btn.innerText = 'Salvar'; }
-    }
-
-    async function fazerLogout() { 
-      sessionStorage.removeItem('autenticado_cemart');
-      try { await db.auth.signOut(); } catch (e) { console.error('Erro ao sair:', e); }
-      window.location.href = 'index.html'; 
-    }
-  </script>
-</body>
-</html>
+          container.innerHTML = `<div class="bg-indigo-50/80 px-3
