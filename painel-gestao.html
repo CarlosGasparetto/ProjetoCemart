@@ -748,7 +748,7 @@
     function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); document.getElementById('modalSenha').classList.add('flex'); }
     function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); document.getElementById('modalSenha').classList.remove('flex'); }
     async function processarTrocaSenha(e) { e.preventDefault(); const btn = document.getElementById('btnSalvarSenha'); btn.disabled = true; try { const { data: sucesso, error } = await db.rpc('atualizar_senha_gestao', { senha_antiga: document.getElementById('senhaAtualInput').value, senha_nova: document.getElementById('senhaNovaInput').value }); if (error) throw error; if (sucesso === true) { alert('Senha atualizada!'); fecharModalSenha(); } else { alert('Senha atual incorreta.'); } } catch (err) { alert('Erro de comunicação.'); } finally { btn.disabled = false; } }
-    function fazerLogout() { sessionStorage.removeItem('autenticado_cemart'); window.location.href = 'index.html'; }
+    function fazerLogout() { sessionStorage.removeItem('autenticado_cemart');await db.auth.signOut(); window.location.href = 'index.html'; }
   </script>
 </body>
 </html>
