@@ -1,0 +1,34 @@
+id_curso,nome_curso,ativo,manha,tarde,noite,nucleo,area,idade_minima,idade_maxima,limite_fila
+1,Ballet Clássico Formação,true,true,true,true,Dança,Dança Clássica,6,,0
+2,Ballet Clássico Adulto,true,true,true,true,Dança,Dança Clássica,16,,0
+3,Dança Contemporânea,true,true,true,true,Dança,Danças Livres,13,,0
+4,Jazz,true,true,true,true,Dança,Danças Livres,8,,0
+5,Sapateado,true,true,true,true,Dança,Danças Livres,0,,0
+6,Dança Kids/Teens,true,true,true,true,Dança,Danças Livres,6,,0
+7,Dança de Salão,true,true,true,true,Dança,Dança Social,15,,0
+8,Teatro,true,true,true,true,Artes,Teatro,6,,0
+9,Desenho Artístico,true,true,true,true,Artes,Artes Visuais,8,,0
+10,Desenho Mangá,true,true,true,true,Artes,Artes Visuais,8,,0
+11,Contrabaixo Elétrico,true,true,true,true,Música,Cordas,0,,0
+12,Ukulele,true,true,true,true,Música,Cordas,0,,0
+13,Viola Caipira,true,true,true,true,Música,Cordas,0,,0
+14,Viola Clássica,true,true,true,true,Música,Cordas,0,,0
+15,Violão,true,true,true,true,Música,Cordas,0,,0
+16,Violino,true,true,true,true,Música,Cordas,0,,0
+17,Violoncelo,true,true,true,true,Música,Cordas,0,,0
+18,Clarinete,true,true,true,true,Música,Sopros,0,,0
+19,Flauta Doce,true,true,true,true,Música,Sopros,0,,0
+20,Flauta Transversal,true,true,true,true,Música,Sopros,0,,0
+21,Saxofone,true,true,true,true,Música,Sopros,0,,0
+22,Trombone,true,true,true,true,Música,Sopros,0,,0
+23,Trompete,true,true,true,true,Música,Sopros,0,,0
+24,Tuba,true,true,true,true,Música,Sopros,0,,0
+25,Acordeon,true,true,true,true,Música,Harmônicos / Teclas,0,,1
+26,Teclado,true,true,true,true,Música,Harmônicos / Teclas,0,,0
+27,Bateria,true,true,true,true,Música,Percussão,0,,0
+28,Percussão,true,true,true,true,Música,Percussão,0,,0
+29,Canto,true,true,true,true,Música,Técnica Vocal,0,,0
+30,Canto Coral,true,true,true,true,Música,Técnica Vocal,0,,0
+31,Formação Musical,true,true,true,true,Música,Teoria / Formação,0,,0
+32,Iniciação Musical,true,true,true,true,Música,Teoria / Formação,0,,0
+33,Teoria Musical,true,true,true,true,Música,Teoria / Formação,0,,0
