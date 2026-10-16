@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <style>
-    /* Estilos exclusivos para impressão e geração de PDF */
     @media print {
       body { background: white !important; color: black !important; font-size: 11pt; }
       header, .no-print, button, select, input, .badge-status { display: none !important; }
@@ -112,7 +111,7 @@
         <p id="infoFiltroImpressao" class="text-xs text-slate-500 mt-1"></p>
       </div>
 
-      <!-- Indicadores Rápidos (Ocultos na Impressão) -->
+      <!-- Indicadores Rápidos -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <span class="text-xs font-semibold uppercase text-slate-400">Aguardando na Fila</span>
@@ -132,7 +131,7 @@
         </div>
       </div>
 
-      <!-- Barra de Filtros (Oculta na Impressão) -->
+      <!-- Barra de Filtros -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 no-print">
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">Buscar Candidato / Protocolo</label>
@@ -751,7 +750,7 @@ Atenciosamente,
       const termo = document.getElementById('buscaTexto').value.trim().toLowerCase();
       const nucleo = document.getElementById('filtroNucleo').value;
       const curso = document.getElementById('filtroCurso').value;
-      const periodo = document.getElementById('filtroPeriodo').value;
+      const periodoFiltro = document.getElementById('filtroPeriodo').value;
       const status = document.getElementById('filtroStatus').value;
 
       const mapaCursoNucleo = {};
@@ -775,16 +774,31 @@ Atenciosamente,
 
         const passaNucleo = !nucleo || mapaCursoNucleo[item.curso] === nucleo;
         const passaCurso = !curso || item.curso === curso;
-        const passaPeriodo = !periodo || item.periodo === periodo;
+        
+        // Tratamento flexível para os períodos (ex: Noite vs Noturno, Manhã vs Matutino, Tarde vs Vespertino)
+        let passaPeriodo = true;
+        if (periodoFiltro) {
+          const pItem = (item.periodo || '').toLowerCase();
+          const pFiltro = periodoFiltro.toLowerCase();
+          if (pFiltro === 'noite') {
+            passaPeriodo = pItem.includes('noite') || pItem.includes('noturno');
+          } else if (pFiltro === 'manhã' || pFiltro === 'manha') {
+            passaPeriodo = pItem.includes('manhã') || pItem.includes('manha') || pItem.includes('matutino');
+          } else if (pFiltro === 'tarde') {
+            passaPeriodo = pItem.includes('tarde') || pItem.includes('vespertino');
+          } else {
+            passaPeriodo = pItem.includes(pFiltro);
+          }
+        }
+
         const passaStatus = !status || (item.status || 'Aguardando') === status;
 
         return passaTexto && passaNucleo && passaCurso && passaPeriodo && passaStatus;
       });
 
-      // Atualiza texto explicativo na impressão com os filtros ativos
       const txtNucleo = nucleo ? `Núcleo: ${nucleo}` : 'Todos os Núcleos';
       const txtCurso = curso ? ` | Curso: ${curso}` : '';
-      const txtPeriodo = periodo ? ` | Período: ${periodo}` : '';
+      const txtPeriodo = periodoFiltro ? ` | Período: ${periodoFiltro}` : '';
       const txtStatus = status ? ` | Status: ${status}` : '';
       document.getElementById('infoFiltroImpressao').textContent = `${txtNucleo}${txtCurso}${txtPeriodo}${txtStatus} — Gerado em: ${new Date().toLocaleString('pt-BR')}`;
 
