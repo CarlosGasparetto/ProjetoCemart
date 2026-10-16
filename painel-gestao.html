@@ -744,7 +744,7 @@ Atenciosamente,
       fecharModalMensagemWa();
     }
 
-    // ================= MODAL DE CURSOS (FORMULÁRIO NO TOPO + TABELA) =================
+    // ================= MODAL DE CURSOS (COM EXCLUSÃO E INTEGRIDADE) =================
     function abrirModalCursos() {
       renderizarListaCursosModal();
       document.getElementById('modalCursos').classList.remove('hidden');
@@ -784,8 +784,9 @@ Atenciosamente,
                 ${c.ativo ? 'Ativo' : 'Inativo'}
               </span>
             </td>
-            <td class="p-3 text-right space-x-2">
+            <td class="p-3 text-right space-x-2 whitespace-nowrap">
               <button onclick="preencherEdicaoCurso(${c.id_curso})" class="text-indigo-600 hover:underline font-semibold">Editar</button>
+              <button onclick="excluirCurso(${c.id_curso}, '${escaparHTML(c.nome_curso)}')" class="text-rose-600 hover:underline font-semibold" title="Excluir curso">🗑️ Excluir</button>
             </td>
           </tr>
         `;
@@ -808,7 +809,6 @@ Atenciosamente,
       document.getElementById('cursoNoite').checked = !!c.noite;
       document.getElementById('cursoAtivo').checked = !!c.ativo;
 
-      // Leva o foco e rola suavemente para o formulário no topo do modal
       document.getElementById('formCurso').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -853,6 +853,41 @@ Atenciosamente,
       }
 
       limparFormCurso();
+      await carregarCursos();
+      renderizarListaCursosModal();
+    }
+
+    // Validação de Integridade Referencial antes de excluir o curso
+    async function excluirCurso(idCurso, nomeCurso) {
+      // 1. Verifica se existem candidatos inscritos neste curso na fila
+      const { data: inscritos, error: erroConsulta } = await db
+        .from('fila_cemart')
+        .select('id')
+        .eq('curso', nomeCurso);
+
+      if (erroConsulta) {
+        alert('Erro ao verificar dependências do curso: ' + erroConsulta.message);
+        return;
+      }
+
+      if (inscritos && inscritos.length > 0) {
+        alert(`Não é possível excluir o curso "${nomeCurso}" porque existem ${inscritos.length} candidato(s) vinculados a ele na fila.\n\nDica: Em vez de excluir, utilize a opção "Inativar" para ocultá-lo das novas inscrições preservando o histórico.`);
+        return;
+      }
+
+      // 2. Confirmação e exclusão caso esteja limpo
+      if (!confirm(`Tem certeza que deseja excluir permanentemente o curso "${nomeCurso}"?`)) return;
+
+      const { error: erroExclusao } = await db
+        .from('cursos')
+        .delete()
+        .eq('id_curso', idCurso);
+
+      if (erroExclusao) {
+        alert('Erro ao excluir curso: ' + erroExclusao.message);
+        return;
+      }
+
       await carregarCursos();
       renderizarListaCursosModal();
     }
