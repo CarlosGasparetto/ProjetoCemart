@@ -66,17 +66,20 @@
           <button onclick="abrirModalCursos()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-indigo-200">
             📚 Catálogo de Cursos
           </button>
+          <button onclick="abrirModalNucleos()" class="bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-violet-200">
+            🏛️ Gerir Núcleos
+          </button>
           <button onclick="abrirModalMensagemWa()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-emerald-200">
-            💬 Mensagem WhatsApp
+            💬 WhatsApp
           </button>
           <button onclick="abrirModalAcessos()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-2 rounded-lg text-xs font-semibold transition border border-amber-200">
             🔑 Acessos
           </button>
           <button onclick="abrirModalTrocaSenha()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold transition">
-            🔒 Alterar Senha
+            🔒 Senha
           </button>
           <button onclick="exportarCSV()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold transition">
-            📥 Exportar CSV
+            📥 CSV
           </button>
           <button onclick="realizarLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-rose-200">
             Sair
@@ -181,16 +184,14 @@
     </main>
   </div>
 
-  <!-- ================= MODAL: CATÁLOGO DE CURSOS E LIMITES ================= -->
+  <!-- ================= MODAL: CATÁLOGO DE CURSOS ================= -->
   <div id="modalCursos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full p-6 max-h-[92vh] flex flex-col">
-      <!-- Topo do Modal -->
       <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
         <h3 class="font-bold text-lg text-slate-800">Catálogo de Cursos e Limite de Filas</h3>
         <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
       </div>
 
-      <!-- Formulário de Inclusão / Edição de Curso (No Topo) -->
       <form id="formCurso" onsubmit="salvarCurso(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5 space-y-3">
         <input type="hidden" id="cursoIdEdicao" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -201,8 +202,10 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Núcleo *</label>
-            <input type="text" id="cursoNucleo" required placeholder="Ex: Dança"
-              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <select id="cursoNucleo" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="">Selecione o Núcleo...</option>
+            </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Área</label>
@@ -252,7 +255,6 @@
         </div>
       </form>
 
-      <!-- Tabela Lista de Cursos Cadastrados -->
       <div class="overflow-y-auto flex-1 border border-slate-200 rounded-2xl">
         <table class="w-full text-left text-xs border-collapse">
           <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
@@ -272,6 +274,26 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: GERIR NÚCLEOS ================= -->
+  <div id="modalNucleos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">🏛️ Gestão de Núcleos Culturais</h3>
+        <button onclick="fecharModalNucleos()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
+      <form onsubmit="adicionarNucleo(event)" class="flex gap-2">
+        <input type="text" id="novoNucleoNome" required placeholder="Nome do novo núcleo..."
+          class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none" />
+        <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow">
+          Adicionar
+        </button>
+      </form>
+      <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-xl">
+        <ul id="listaNucleosCorpo" class="divide-y divide-slate-200 text-xs"></ul>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL: MENSAGEM WHATSAPP ================= -->
   <div id="modalMensagemWa" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4">
@@ -279,28 +301,16 @@
         <h3 class="font-bold text-lg text-slate-800">💬 Configurar Mensagem do WhatsApp</h3>
         <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
       </div>
-      <p class="text-xs text-slate-600">
-        Edite abaixo o modelo de mensagem utilizado na convocação. Mantenha os marcadores
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{nome}</code>,
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{curso}</code>,
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{periodo}</code> e
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{protocolo}</code>
-        para preenchimento automático dos dados de cada candidato.
-      </p>
       <textarea id="campoTextoWa" rows="11"
         class="w-full p-3 rounded-lg border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="fecharModalMensagemWa()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
-          Cancelar
-        </button>
-        <button onclick="salvarMensagemWa()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow">
-          Salvar Modelo no Banco
-        </button>
+        <button onclick="fecharModalMensagemWa()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Cancelar</button>
+        <button onclick="salvarMensagemWa()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow">Salvar no Banco</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= MODAL: ACESSOS PERMITIDOS ================= -->
+  <!-- ================= MODAL: ACESSOS ================= -->
   <div id="modalAcessos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -310,9 +320,7 @@
       <form onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
         <input type="email" id="novoEmailPermitido" required placeholder="novo.servidor@barretos.sp.gov.br"
           class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm" />
-        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">
-          Autorizar
-        </button>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Autorizar</button>
       </form>
       <ul id="listaEmailsPermitidos" class="divide-y divide-slate-200 max-h-60 overflow-y-auto text-sm"></ul>
     </div>
@@ -339,12 +347,8 @@
           <input type="password" id="confirmarNovaSenha" required minlength="6" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="fecharModalTrocaSenha()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
-            Cancelar
-          </button>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
-            Atualizar Senha
-          </button>
+          <button type="button" onclick="fecharModalTrocaSenha()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">Atualizar Senha</button>
         </div>
       </form>
     </div>
@@ -374,6 +378,7 @@ Atenciosamente,
     let usuarioLogado = null;
     let listaFilaCompleta = [];
     let listaCursosCompleta = [];
+    let listaNucleosCompleta = [];
     let mensagemWaCache = MENSAGEM_WA_PADRAO;
 
     function escaparHTML(texto) {
@@ -435,6 +440,7 @@ Atenciosamente,
       document.getElementById('conteudoPainel').classList.remove('hidden');
 
       await Promise.all([
+        carregarNucleos(),
         carregarCursos(),
         carregarDadosFila(),
         carregarMensagemWaDoBanco()
@@ -475,6 +481,97 @@ Atenciosamente,
       document.getElementById('alertaLogin').classList.add('hidden');
     }
 
+    // ================= GESTÃO DE NÚCLEOS =================
+    async function carregarNucleos() {
+      const { data, error } = await db
+        .from('nucleos_culturais')
+        .select('*')
+        .order('nome_nucleo', { ascending: true });
+
+      if (!error && data) {
+        listaNucleosCompleta = data;
+        popularSelectNucleosForm();
+        popularFiltroNucleos();
+      }
+    }
+
+    function popularSelectNucleosForm() {
+      const select = document.getElementById('cursoNucleo');
+      const valorAtual = select.value;
+      select.innerHTML = '<option value="">Selecione o Núcleo...</option>' +
+        listaNucleosCompleta.map(n => `<option value="${escaparHTML(n.nome_nucleo)}">${escaparHTML(n.nome_nucleo)}</option>`).join('');
+      select.value = valorAtual;
+    }
+
+    function popularFiltroNucleos() {
+      const selectNucleo = document.getElementById('filtroNucleo');
+      const valorAtual = selectNucleo.value;
+      selectNucleo.innerHTML = '<option value="">Todos os Núcleos</option>' +
+        listaNucleosCompleta.map(n => `<option value="${escaparHTML(n.nome_nucleo)}">${escaparHTML(n.nome_nucleo)}</option>`).join('');
+      selectNucleo.value = valorAtual;
+    }
+
+    function abrirModalNucleos() {
+      renderizarListaNucleosModal();
+      document.getElementById('modalNucleos').classList.remove('hidden');
+    }
+
+    function fecharModalNucleos() {
+      document.getElementById('modalNucleos').classList.add('hidden');
+      document.getElementById('novoNucleoNome').value = '';
+    }
+
+    function renderizarListaNucleosModal() {
+      const corpo = document.getElementById('listaNucleosCorpo');
+      if (!listaNucleosCompleta.length) {
+        corpo.innerHTML = '<li class="p-4 text-center text-slate-400">Nenhum núcleo cadastrado.</li>';
+        return;
+      }
+
+      corpo.innerHTML = listaNucleosCompleta.map(n => `
+        <li class="p-3 flex items-center justify-between hover:bg-slate-50">
+          <span class="font-semibold text-slate-800">${escaparHTML(n.nome_nucleo)}</span>
+          <button onclick="excluirNucleo(${n.id}, '${escaparHTML(n.nome_nucleo)}')" class="text-rose-600 hover:underline font-semibold text-xs">Excluir</button>
+        </li>
+      `).join('');
+    }
+
+    async function adicionarNucleo(event) {
+      event.preventDefault();
+      const nome = document.getElementById('novoNucleoNome').value.trim();
+      if (!nome) return;
+
+      const { error } = await db.from('nucleos_culturais').insert([{ nome_nucleo: nome }]);
+      if (error) {
+        alert('Erro ao adicionar núcleo (talvez já exista): ' + error.message);
+        return;
+      }
+
+      document.getElementById('novoNucleoNome').value = '';
+      await carregarNucleos();
+      renderizarListaNucleosModal();
+    }
+
+    async function excluirNucleo(idNucleo, nomeNucleo) {
+      // Valida integridade referencial: verifica se há cursos vinculados a este núcleo
+      const cursosVinculados = listaCursosCompleta.filter(c => c.nucleo === nomeNucleo);
+      if (cursosVinculados.length > 0) {
+        alert(`Não é possível excluir o núcleo "${nomeNucleo}" pois existem ${cursosVinculados.length} curso(s) vinculados a ele.`);
+        return;
+      }
+
+      if (!confirm(`Deseja excluir permanentemente o núcleo "${nomeNucleo}"?`)) return;
+
+      const { error } = await db.from('nucleos_culturais').delete().eq('id', idNucleo);
+      if (error) {
+        alert('Erro ao excluir núcleo: ' + error.message);
+        return;
+      }
+
+      await carregarNucleos();
+      renderizarListaNucleosModal();
+    }
+
     // ================= CARREGAMENTO DE CURSOS E FILA =================
     async function carregarCursos() {
       const { data, error } = await db
@@ -484,19 +581,8 @@ Atenciosamente,
 
       if (!error && data) {
         listaCursosCompleta = data;
-        popularFiltroNucleos();
         atualizarSelectCursosFiltro();
       }
-    }
-
-    function popularFiltroNucleos() {
-      const selectNucleo = document.getElementById('filtroNucleo');
-      const valorAtual = selectNucleo.value;
-      const nucleos = [...new Set(listaCursosCompleta.map(c => c.nucleo).filter(Boolean))].sort();
-
-      selectNucleo.innerHTML = '<option value="">Todos os Núcleos</option>' +
-        nucleos.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}</option>`).join('');
-      selectNucleo.value = valorAtual;
     }
 
     function atualizarSelectCursosFiltro() {
@@ -678,7 +764,7 @@ Atenciosamente,
       await carregarDadosFila();
     }
 
-    // ================= WHATSAPP DINÂMICO COM SUPABASE =================
+    // ================= WHATSAPP DINÂMICO =================
     async function carregarMensagemWaDoBanco() {
       const { data, error } = await db
         .from('config_sistema')
@@ -744,7 +830,7 @@ Atenciosamente,
       fecharModalMensagemWa();
     }
 
-    // ================= MODAL DE CURSOS (COM EXCLUSÃO E INTEGRIDADE) =================
+    // ================= MODAL DE CURSOS =================
     function abrirModalCursos() {
       renderizarListaCursosModal();
       document.getElementById('modalCursos').classList.remove('hidden');
@@ -827,7 +913,7 @@ Atenciosamente,
 
       const dadosCurso = {
         nome_curso: document.getElementById('cursoNome').value.trim(),
-        nucleo: document.getElementById('cursoNucleo').value.trim(),
+        nucleo: document.getElementById('cursoNucleo').value,
         area: document.getElementById('cursoArea').value.trim() || null,
         idade_minima: document.getElementById('cursoIdMin').value ? parseInt(document.getElementById('cursoIdMin').value, 10) : 0,
         idade_maxima: document.getElementById('cursoIdMax').value ? parseInt(document.getElementById('cursoIdMax').value, 10) : null,
@@ -857,32 +943,25 @@ Atenciosamente,
       renderizarListaCursosModal();
     }
 
-    // Validação de Integridade Referencial antes de excluir o curso
     async function excluirCurso(idCurso, nomeCurso) {
-      // 1. Verifica se existem candidatos inscritos neste curso na fila
       const { data: inscritos, error: erroConsulta } = await db
         .from('fila_cemart')
         .select('id')
         .eq('curso', nomeCurso);
 
       if (erroConsulta) {
-        alert('Erro ao verificar dependências do curso: ' + erroConsulta.message);
+        alert('Erro ao verificar dependências: ' + erroConsulta.message);
         return;
       }
 
       if (inscritos && inscritos.length > 0) {
-        alert(`Não é possível excluir o curso "${nomeCurso}" porque existem ${inscritos.length} candidato(s) vinculados a ele na fila.\n\nDica: Em vez de excluir, utilize a opção "Inativar" para ocultá-lo das novas inscrições preservando o histórico.`);
+        alert(`Não é possível excluir o curso "${nomeCurso}" pois existem ${inscritos.length} candidato(s) vinculados a ele na fila. Utilize a opção "Inativar".`);
         return;
       }
 
-      // 2. Confirmação e exclusão caso esteja limpo
       if (!confirm(`Tem certeza que deseja excluir permanentemente o curso "${nomeCurso}"?`)) return;
 
-      const { error: erroExclusao } = await db
-        .from('cursos')
-        .delete()
-        .eq('id_curso', idCurso);
-
+      const { error: erroExclusao } = await db.from('cursos').delete().eq('id_curso', idCurso);
       if (erroExclusao) {
         alert('Erro ao excluir curso: ' + erroExclusao.message);
         return;
@@ -909,12 +988,10 @@ Atenciosamente,
         ul.innerHTML = '<li class="py-2 text-slate-400">Erro ao carregar lista.</li>';
         return;
       }
-
       ul.innerHTML = data.map(item => `
         <li class="py-2.5 flex items-center justify-between">
           <span class="font-medium text-slate-700">${escaparHTML(item.email)}</span>
-          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')"
-            class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
+          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
         </li>
       `).join('');
     }
@@ -939,7 +1016,7 @@ Atenciosamente,
         alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
         return;
       }
-      if (!confirm(`Deseja remover a autorização de acesso para ${email}?`)) return;
+      if (!confirm(`Deseja remover o acesso para ${email}?`)) return;
 
       const { error } = await db.from('usuarios_permitidos').delete().eq('id', id);
       if (error) {
@@ -949,7 +1026,7 @@ Atenciosamente,
       await carregarEmailsPermitidos();
     }
 
-    // ================= MODAL DE TROCA DE SENHA =================
+    // ================= MODAL DE TROCAR SENHA =================
     function abrirModalTrocaSenha() {
       document.getElementById('modalTrocaSenha').classList.remove('hidden');
     }
